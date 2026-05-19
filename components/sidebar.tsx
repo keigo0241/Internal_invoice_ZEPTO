@@ -4,13 +4,13 @@ import Link from "next/link";
 type UserRole = "user" | "midadmin" | "admin";
 
 const menuItems = [
-  { label: "ダッシュボード", href: "/dashboard", icon: "/icons/dashboard.png", roles: ["user", "midadmin", "admin"] },
-  { label: "請求書一覧", href: "/invoices", icon: "/icons/invoices.png", roles: ["user", "midadmin", "admin"], hasBorder: true },
-  { label: "下書き一覧", href: "/invoices/drafts", icon: "/icons/drafts.png", roles: ["user", "midadmin"] },
-  { label: "差戻一覧", href: "/approvals/returned", icon: "/icons/returned.png", roles: ["user", "midadmin"] },
-  { label: "ユーザー一覧", href: "/users", icon: "/icons/users.png", roles: ["midadmin", "admin"], hasBorder: true },
-  { label: "ユーザー情報", href: "/profile", icon: "/icons/profile.png", roles: ["user", "midadmin", "admin"],borderRoles: ["user"], },
-  { label: "申請一覧", href: "/requests", icon: "/icons/requests.png", roles: ["midadmin", "admin"], hasBorder: true },
+  { label: "ダッシュボード", href: "/dashboard", roles: ["user", "midadmin", "admin"] },
+  { label: "請求書一覧", href: "/invoices", roles: ["user", "midadmin", "admin"], hasBorder: true },
+  { label: "下書き一覧", href: "/invoices", roles: ["user", "midadmin"] },
+  { label: "差戻一覧", href: "/invoices", roles: ["user", "midadmin"] },
+  { label: "ユーザー一覧", href: "/users", roles: ["midadmin", "admin"], hasBorder: true },
+  { label: "ユーザー情報", href: "/users", roles: ["user", "midadmin", "admin"],borderRoles: ["user"], },
+  { label: "申請一覧", href: "/requests", roles: ["midadmin", "admin"], hasBorder: true },
 ];
 
 const currentUserRole: UserRole = "midadmin";
