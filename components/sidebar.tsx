@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 
+type UserRole = "user" | "midadmin" | "admin";
+
 const menuItems = [
   { label: "ダッシュボード", href: "/dashboard", icon: "/icons/dashboard.png", roles: ["user", "midadmin", "admin"] },
   { label: "請求書一覧", href: "/invoices", icon: "/icons/invoices.png", roles: ["user", "midadmin", "admin"], hasBorder: true },
@@ -31,7 +33,7 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex flex-col gap-2">
-          {menuItems.filter((item) => item.roles.includes(currentUserRole)).map((item, index) => (
+          {menuItems.filter((item) => item.roles.includes(currentUserRole)).map((item) => (
             <div key={item.href}>
 
               {(item.hasBorder ||
