@@ -13,7 +13,7 @@ const menuItems = [
   { label: "申請一覧", href: "/requests", icon: "/icons/requests.png", roles: ["midadmin", "admin"], hasBorder: true },
 ];
 
-const currentUserRole: UserRole = "user";
+const currentUserRole: UserRole = "midadmin";
 
 export function AppSidebar() {
   return (
