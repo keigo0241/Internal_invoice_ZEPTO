@@ -1,8 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
-import { USER_ROLES, type UserRole } from "@/constants/roles";
+import { type UserRole } from "@/constants/roles";
 
-const menuItems = [
+type SidebarMenuItem = {
+  id: string;
+  label: string;
+  href: string;
+  roles: UserRole[];
+  hasBorder?: boolean;
+  borderRoles?: UserRole[];
+};
+
+const menuItems: SidebarMenuItem[] = [
   { id: "dashboard", label: "ダッシュボード", href: "/dashboard", roles: ["user", "midadmin", "admin"] },
   { id: "invoice-list", label: "請求書一覧", href: "/invoices", roles: ["user", "midadmin", "admin"], hasBorder: true },
   { id: "draft-list", label: "下書き一覧", href: "/invoices?status=draft", roles: ["user", "midadmin"] },
@@ -12,26 +21,39 @@ const menuItems = [
   { id: "requests-list", label: "申請一覧", href: "/requests", roles: ["midadmin", "admin"], hasBorder: true },
 ];
 
-const currentUserRole: UserRole = USER_ROLES.USER;
+type AppSidebarProps = {
+  currentUserRole: UserRole;
+  isOpen: boolean;
+};
 
-export function AppSidebar() {
+export function AppSidebar({ currentUserRole, isOpen }: AppSidebarProps) {
   return (
-    <aside className="h-screen w-50 bg-sky-800 p-4 text-white">
-      <div className="mb-8 flex items-center gap-3">
-        <Image
-          src="/icons/zeptologo.png"
-          alt="logo"
-          width={40}
-          height={40}
-          className="rounded-md"
-        />
+    <aside
+      aria-hidden={!isOpen}
+      className={`h-screen shrink-0 overflow-hidden bg-sky-800 text-white transition-[width] duration-300 ease-in-out ${
+        isOpen ? "w-50" : "w-0"
+      }`}
+    >
+      <div
+        className={`w-50 p-4 transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="mb-8 flex items-center gap-3">
+          <Image
+            src="/icons/zeptologo.png"
+            alt="logo"
+            width={40}
+            height={40}
+            className="rounded-md"
+          />
 
-        <h1 className="text-base font-bold">
-          社内請求書App
-        </h1>
-      </div>
+          <h1 className="text-base font-bold">
+            社内請求書App
+          </h1>
+        </div>
 
-      <nav className="flex flex-col gap-2">
+        <nav className="flex flex-col gap-2">
           {menuItems.filter((item) => item.roles.includes(currentUserRole)).map((item) => (
             <div key={item.id}>
 
@@ -53,6 +75,7 @@ export function AppSidebar() {
             </div>
           ))}
         </nav>
+      </div>
     </aside>
   );
 }

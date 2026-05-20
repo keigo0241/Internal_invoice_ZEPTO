@@ -1,5 +1,6 @@
 import "./globals.css"
-import { AppSidebar } from "@/components/sidebar";
+import { Suspense } from "react";
+import { AppShell } from "@/components/app-shell";
 
 export default function RootLayout({
   children,
@@ -9,13 +10,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <div className="flex">
-          <AppSidebar />
-
-          <main className="flex-1 p-6">
-            {children}
-          </main>
-        </div>
+        <Suspense>
+          <AppShell>{children}</AppShell>
+        </Suspense>
       </body>
     </html>
   );
