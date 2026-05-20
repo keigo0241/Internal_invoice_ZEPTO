@@ -1,19 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-
-type UserRole = "user" | "midadmin" | "admin";
+import { USER_ROLES, type UserRole } from "@/constants/roles";
 
 const menuItems = [
-  { label: "ダッシュボード", href: "/dashboard", roles: ["user", "midadmin", "admin"] },
-  { label: "請求書一覧", href: "/invoices", roles: ["user", "midadmin", "admin"], hasBorder: true },
-  { label: "下書き一覧", href: "/invoices", roles: ["user", "midadmin"] },
-  { label: "差戻一覧", href: "/invoices", roles: ["user", "midadmin"] },
-  { label: "ユーザー一覧", href: "/users", roles: ["midadmin", "admin"], hasBorder: true },
-  { label: "ユーザー情報", href: "/users", roles: ["user", "midadmin", "admin"],borderRoles: ["user"], },
-  { label: "申請一覧", href: "/requests", roles: ["midadmin", "admin"], hasBorder: true },
+  { id: "dashboard", label: "ダッシュボード", href: "/dashboard", roles: ["user", "midadmin", "admin"] },
+  { id: "invoice-list", label: "請求書一覧", href: "/invoices", roles: ["user", "midadmin", "admin"], hasBorder: true },
+  { id: "draft-list", label: "下書き一覧", href: "/invoices?status=draft", roles: ["user", "midadmin"] },
+  { id: "returned-list", label: "差戻一覧", href: "/invoices?status=returned", roles: ["user", "midadmin"] },
+  { id: "users-list", label: "ユーザー一覧", href: "/users", roles: ["midadmin", "admin"], hasBorder: true },
+  { id: "user-profile", label: "ユーザー情報", href: "/profile", roles: ["user", "midadmin", "admin"], borderRoles: ["user"] },
+  { id: "requests-list", label: "申請一覧", href: "/requests", roles: ["midadmin", "admin"], hasBorder: true },
 ];
 
-const currentUserRole: UserRole = "midadmin";
+const currentUserRole: UserRole = USER_ROLES.USER;
 
 export function AppSidebar() {
   return (
@@ -34,7 +33,7 @@ export function AppSidebar() {
 
       <nav className="flex flex-col gap-2">
           {menuItems.filter((item) => item.roles.includes(currentUserRole)).map((item) => (
-            <div key={item.href}>
+            <div key={item.id}>
 
               {(item.hasBorder ||
                 item.borderRoles?.includes(currentUserRole)) && (
