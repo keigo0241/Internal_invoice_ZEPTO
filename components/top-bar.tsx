@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { type UserRole } from "@/constants/roles";
+import { USER_ROLE_LABELS, type UserRole } from "@/constants/roles";
 
 type CurrentUser = {
   name: string;
@@ -12,12 +13,6 @@ type TopBarProps = {
   currentUser: CurrentUser;
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
-};
-
-const roleLabels: Record<UserRole, string> = {
-  user: "ユーザー",
-  midadmin: "中間管理者",
-  admin: "管理者",
 };
 
 function getPageTitle(pathname: string, status: string | null) {
@@ -32,15 +27,19 @@ function getPageTitle(pathname: string, status: string | null) {
   return "ダッシュボード";
 }
 
+function PageTitle() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const pageTitle = getPageTitle(pathname, searchParams.get("status"));
+
+  return <h2 className="text-xl font-semibold text-white">{pageTitle}</h2>;
+}
+
 export function TopBar({
   currentUser,
   isSidebarOpen,
   onToggleSidebar,
 }: TopBarProps) {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const pageTitle = getPageTitle(pathname, searchParams.get("status"));
-
   return (
     <header className="flex h-16 items-center justify-between border-b border-white/20 bg-sky-800 px-6 text-white">
       <div className="flex items-center gap-4">
@@ -57,12 +56,14 @@ export function TopBar({
           </span>
         </button>
 
-        <h2 className="text-xl font-semibold text-white">{pageTitle}</h2>
+        <Suspense fallback={<h2 className="text-xl font-semibold text-white">ダッシュボード</h2>}>
+          <PageTitle />
+        </Suspense>
       </div>
 
       <div className="text-right">
         <p className="text-sm font-semibold text-white">{currentUser.name}</p>
-        <p className="text-xs text-sky-100">{roleLabels[currentUser.role]}</p>
+        <p className="text-xs text-sky-100">{USER_ROLE_LABELS[currentUser.role]}</p>
       </div>
     </header>
   );
