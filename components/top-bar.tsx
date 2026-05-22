@@ -1,8 +1,9 @@
 "use client";
 
 import { Suspense } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { USER_ROLE_LABELS, type UserRole } from "@/constants/roles";
+import { getDefaultPageTitle, getPageTitle } from "@/constants/navigation";
 
 type CurrentUser = {
   name: string;
@@ -15,22 +16,9 @@ type TopBarProps = {
   onToggleSidebar: () => void;
 };
 
-function getPageTitle(pathname: string, status: string | null) {
-  if (pathname === "/dashboard") return "ダッシュボード";
-  if (pathname === "/invoices" && status === "draft") return "下書き一覧";
-  if (pathname === "/invoices" && status === "returned") return "差戻一覧";
-  if (pathname === "/invoices") return "請求書一覧";
-  if (pathname === "/users") return "ユーザー一覧";
-  if (pathname === "/profile") return "ユーザー情報";
-  if (pathname === "/requests") return "申請一覧";
-
-  return "ダッシュボード";
-}
-
 function PageTitle() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const pageTitle = getPageTitle(pathname, searchParams.get("status"));
+  const pageTitle = getPageTitle(pathname);
 
   return <h2 className="text-xl font-semibold text-white">{pageTitle}</h2>;
 }
@@ -56,7 +44,7 @@ export function TopBar({
           </span>
         </button>
 
-        <Suspense fallback={<h2 className="text-xl font-semibold text-white">ダッシュボード</h2>}>
+        <Suspense fallback={<h2 className="text-xl font-semibold text-white">{getDefaultPageTitle()}</h2>}>
           <PageTitle />
         </Suspense>
       </div>

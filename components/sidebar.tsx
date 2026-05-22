@@ -1,25 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { type UserRole } from "@/constants/roles";
-
-type SidebarMenuItem = {
-  id: string;
-  label: string;
-  href: string;
-  roles: UserRole[];
-  hasBorder?: boolean;
-  borderRoles?: UserRole[];
-};
-
-const menuItems: SidebarMenuItem[] = [
-  { id: "dashboard", label: "ダッシュボード", href: "/dashboard", roles: ["user", "midadmin", "admin"] },
-  { id: "invoice-list", label: "請求書一覧", href: "/invoices", roles: ["user", "midadmin", "admin"], hasBorder: true },
-  { id: "draft-list", label: "下書き一覧", href: "/invoices?status=draft", roles: ["user", "midadmin"] },
-  { id: "returned-list", label: "差戻一覧", href: "/invoices?status=returned", roles: ["user", "midadmin"] },
-  { id: "users-list", label: "ユーザー一覧", href: "/users", roles: ["midadmin", "admin"], hasBorder: true },
-  { id: "user-profile", label: "ユーザー情報", href: "/profile", roles: ["user", "midadmin", "admin"], borderRoles: ["user"] },
-  { id: "requests-list", label: "申請一覧", href: "/requests", roles: ["midadmin", "admin"], hasBorder: true },
-];
+import { sidebarByRole, type PageDef } from "@/constants/navigation";
 
 type AppSidebarProps = {
   currentUserRole: UserRole;
@@ -27,6 +9,8 @@ type AppSidebarProps = {
 };
 
 export function AppSidebar({ currentUserRole, isOpen }: AppSidebarProps) {
+  const menuItems: readonly PageDef[] = sidebarByRole[currentUserRole];
+
   return (
     <aside
       aria-hidden={!isOpen}
@@ -54,7 +38,7 @@ export function AppSidebar({ currentUserRole, isOpen }: AppSidebarProps) {
         </div>
 
         <nav className="flex flex-col gap-2">
-          {menuItems.filter((item) => item.roles.includes(currentUserRole)).map((item) => (
+          {menuItems.map((item) => (
             <div key={item.id}>
 
               {(item.hasBorder ||

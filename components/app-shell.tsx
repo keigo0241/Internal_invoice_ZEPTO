@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AppSidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/top-bar";
-import { USER_ROLES, type UserRole } from "@/constants/roles";
+import { UserRole } from "@/constants/roles";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -16,7 +16,7 @@ type CurrentUser = {
 
 const currentUser: CurrentUser = {
   name: "辻井 啓悟",
-  role: USER_ROLES.USER,
+  role: UserRole.User,
 };
 
 export function AppShell({ children }: AppShellProps) {
