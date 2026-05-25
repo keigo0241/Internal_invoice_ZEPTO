@@ -1,8 +1,11 @@
-export const USER_ROLES = {
-  USER: "user",
-  MIDADMIN: "midadmin",
-  ADMIN: "admin",
-} as const;
+export enum UserRole {
+  User = "user",
+  MidAdmin = "midadmin",
+  Admin = "admin",
+}
 
-export type UserRole =
-  (typeof USER_ROLES)[keyof typeof USER_ROLES];
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.User]: "ユーザー",
+  [UserRole.MidAdmin]: "中間管理者",
+  [UserRole.Admin]: "管理者",
+};
