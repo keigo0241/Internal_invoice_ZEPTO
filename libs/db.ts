@@ -1,41 +1,50 @@
 import { Pool, type PoolConfig, type QueryResultRow } from "pg";
+import { getEnv } from "@/libs/server/env/get-env";
+import { getRequiredEnv } from "@/libs/server/env/get-required-env";
 import { type DbConnection, type DbQueryParams } from "@/types/db";
 
 const DEFAULT_DB_PORT = 5432;
+const MIN_DB_PORT = 1;
+const MAX_DB_PORT = 65535;
+
+const DB_ENV_KEYS = {
+  host: "DB_HOST",
+  port: "DB_PORT",
+  user: "DB_USER",
+  password: "DB_PASSWORD",
+  database: "DB_NAME",
+  sslRejectUnauthorized: "DB_SSL_REJECT_UNAUTHORIZED",
+} as const;
 
 type GlobalWithDbPool = typeof globalThis & {
   rdsPool?: Pool;
 };
 
-function getRequiredEnv(key: string) {
-  const value = process.env[key];
-
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-
-  return value;
-}
-
 function getDbPort() {
-  const port = Number(process.env.DB_PORT ?? DEFAULT_DB_PORT);
+  const port = Number(getEnv(DB_ENV_KEYS.port) ?? DEFAULT_DB_PORT);
 
-  if (!Number.isInteger(port)) {
-    throw new Error("DB_PORT must be an integer.");
+  if (!Number.isInteger(port) || port < MIN_DB_PORT || port > MAX_DB_PORT) {
+    throw new Error("DB_PORT must be an integer between 1 and 65535.");
   }
 
   return port;
 }
 
+function getSslRejectUnauthorized() {
+  const value = getEnv(DB_ENV_KEYS.sslRejectUnauthorized);
+
+  return value !== "false";
+}
+
 function getRdsConfig(): PoolConfig {
   return {
-    host: getRequiredEnv("DB_HOST"),
+    host: getRequiredEnv(DB_ENV_KEYS.host),
     port: getDbPort(),
-    user: getRequiredEnv("DB_USER"),
-    password: getRequiredEnv("DB_PASSWORD"),
-    database: getRequiredEnv("DB_NAME"),
+    user: getRequiredEnv(DB_ENV_KEYS.user),
+    password: getRequiredEnv(DB_ENV_KEYS.password),
+    database: getRequiredEnv(DB_ENV_KEYS.database),
     ssl: {
-      rejectUnauthorized: false,
+      rejectUnauthorized: getSslRejectUnauthorized(),
     },
   };
 }
@@ -50,14 +59,16 @@ function createRdsPool() {
   return globalWithDbPool.rdsPool;
 }
 
-const rdsPool = createRdsPool();
+function getRdsPool() {
+  return createRdsPool();
+}
 
 export const db: DbConnection = {
   query<T extends QueryResultRow = QueryResultRow>(
     sql: string,
     params?: DbQueryParams,
   ) {
-    return rdsPool.query<T>(sql, params);
+    return getRdsPool().query<T>(sql, params);
   },
 };
 
