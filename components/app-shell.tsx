@@ -9,12 +9,7 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-type CurrentUser = {
-  name: string;
-  role: UserRole;
-};
-
-const currentUser: CurrentUser = {
+const currentUser = {
   name: "辻井 啓悟",
   role: UserRole.User,
 };

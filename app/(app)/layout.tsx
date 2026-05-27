@@ -1,9 +1,12 @@
-import { AppShell } from "@/components/app-shell";
+import { redirect } from "next/navigation";
+import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 
 type AppLayoutProps = {
   children: React.ReactNode;
 };
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  return <AppShell>{children}</AppShell>;
+  void children;
+
+  redirect(GOOGLE_AUTH_CONFIG.loginPath);
 }
