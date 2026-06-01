@@ -4,6 +4,7 @@ import { getRequiredEnv } from "@/libs/server/env/get-required-env";
 import { type DbConnection, type DbQueryParams } from "@/types/db";
 
 const DEFAULT_DB_PORT = 5432;
+const DEFAULT_DB_CONNECTION_TIMEOUT_MS = 10000;
 const MIN_DB_PORT = 1;
 const MAX_DB_PORT = 65535;
 
@@ -43,6 +44,7 @@ function getRdsConfig(): PoolConfig {
     user: getRequiredEnv(DB_ENV_KEYS.user),
     password: getRequiredEnv(DB_ENV_KEYS.password),
     database: getRequiredEnv(DB_ENV_KEYS.database),
+    connectionTimeoutMillis: DEFAULT_DB_CONNECTION_TIMEOUT_MS,
     ssl: {
       rejectUnauthorized: getSslRejectUnauthorized(),
     },
