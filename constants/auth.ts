@@ -20,6 +20,7 @@ export const LOGIN_ERROR_CODE = {
   invalidGoogleDomain: "invalid_google_domain",
   googleAuthFailed: "google_auth_failed",
   invalidGoogleState: "invalid_google_state",
+  dbConnectionFailed: "db_connection_failed",
 } as const;
 
 export type LoginErrorCode =
