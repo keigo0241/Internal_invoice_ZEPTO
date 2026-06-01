@@ -10,6 +10,10 @@ describe("google auth policy", () => {
     expect(isAllowedGoogleEmailDomain("user@zpt-ai.com")).toBe(true);
   });
 
+  it("normalizes email before checking the domain", () => {
+    expect(isAllowedGoogleEmailDomain(" USER@ZPT-AI.COM ")).toBe(true);
+  });
+
   it("rejects email addresses outside zpt-ai.com", () => {
     expect(isAllowedGoogleEmailDomain("user@example.com")).toBe(false);
   });

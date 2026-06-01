@@ -1,13 +1,15 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import {
   AUTH_COOKIE_MAX_AGE_SECONDS,
   AUTH_COOKIE_NAMES,
 } from "@/constants/auth";
 import { createGoogleAuthorizationUrl } from "@/features/auth/services/google-oauth";
+import { type ApiHandler } from "@/lib/api/types";
 
-export function GET(request: NextRequest) {
+export const handleGet: ApiHandler = async (ctx) => {
+  const requestUrl = new URL(ctx.request.url);
   const state = crypto.randomUUID();
-  const authorizationUrl = createGoogleAuthorizationUrl(request.nextUrl.origin, state);
+  const authorizationUrl = createGoogleAuthorizationUrl(requestUrl.origin, state);
   const response = NextResponse.redirect(authorizationUrl);
 
   response.cookies.set(AUTH_COOKIE_NAMES.googleOauthState, state, {
@@ -15,8 +17,8 @@ export function GET(request: NextRequest) {
     maxAge: AUTH_COOKIE_MAX_AGE_SECONDS.googleOauthState,
     path: "/",
     sameSite: "lax",
-    secure: request.nextUrl.protocol === "https:",
+    secure: requestUrl.protocol === "https:",
   });
 
   return response;
-}
+};
