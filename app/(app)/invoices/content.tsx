@@ -9,6 +9,15 @@ type InvoicesContentProps = {
   invoiceStatus: InvoiceStatus | null;
 };
 
+const invoiceFilterLinks: {
+  href: string;
+  label: string;
+}[] = [
+  { href: "/invoices", label: jp.invoices.filters.all },
+  { href: "/invoices?status=draft", label: jp.invoices.filters.draft },
+  { href: "/invoices?status=returned", label: jp.invoices.filters.returned },
+];
+
 function getFilterMessage(status: InvoiceStatus | null) {
   if (!status) return jp.invoices.allFilterMessage;
 
@@ -29,24 +38,15 @@ export function InvoicesContent({ invoiceStatus }: InvoicesContentProps) {
         </div>
 
         <div className="flex items-center gap-2 text-sm">
-          <Link
-            href="/invoices"
-            className="rounded-md border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-100"
-          >
-            {jp.invoices.filters.all}
-          </Link>
-          <Link
-            href="/invoices?status=draft"
-            className="rounded-md border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-100"
-          >
-            {jp.invoices.filters.draft}
-          </Link>
-          <Link
-            href="/invoices?status=returned"
-            className="rounded-md border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-100"
-          >
-            {jp.invoices.filters.returned}
-          </Link>
+          {invoiceFilterLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-100"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
       </div>
 

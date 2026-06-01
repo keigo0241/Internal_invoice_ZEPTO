@@ -12,21 +12,8 @@ import {
 } from "@/features/auth/services/google-oauth";
 import { setGoogleVerifiedEmailCookie } from "@/features/auth/services/session";
 import { type ApiHandler } from "@/lib/api/types";
+import { getCookieValue } from "@/lib/http/cookies";
 import { logger } from "@/lib/logger/logger";
-
-function getCookieValue(request: Request, cookieName: string) {
-  const cookieHeader = request.headers.get("cookie");
-
-  if (!cookieHeader) {
-    return undefined;
-  }
-
-  return cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith(`${cookieName}=`))
-    ?.slice(cookieName.length + 1);
-}
 
 function createLoginRedirect(request: Request, errorCode: LoginErrorCode) {
   const requestUrl = new URL(request.url);
@@ -86,6 +73,16 @@ export const handleGet: ApiHandler = async (ctx) => {
   const domainErrorCode = getGoogleLoginErrorCode(googleUser.email);
 
   if (domainErrorCode) {
+    logger.warn({
+      message: "Google OAuth login rejected by domain policy.",
+      context: {
+        path: requestUrl.pathname,
+        traceId: ctx.traceId,
+        emailDomain: googleUser.email.split("@")[1],
+        errorCode: domainErrorCode,
+      },
+    });
+
     return createLoginRedirect(ctx.request, domainErrorCode);
   }
 
