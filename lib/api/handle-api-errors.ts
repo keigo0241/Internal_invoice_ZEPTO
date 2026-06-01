@@ -31,7 +31,7 @@ export function handleApiError({
       status: 500,
       headers: {
         "Content-Type": "application/problem+json",
-        "X-Trace-Id": traceId,
+        "x-Trace-Id": traceId,
       },
     },
   );
