@@ -6,6 +6,7 @@ import {
   type LoginErrorCode,
 } from "@/constants/auth";
 import { getGoogleLoginErrorCode } from "@/features/auth/services/google-auth-policy";
+import { getGoogleAuthNextPath } from "@/features/auth/services/google-auth-flow";
 import {
   exchangeGoogleCodeForIdToken,
   verifyGoogleIdToken,
@@ -26,9 +27,9 @@ function createLoginRedirect(request: Request, errorCode: LoginErrorCode) {
   return response;
 }
 
-function createSuccessRedirect(request: Request) {
+function createSuccessRedirect(request: Request, pathname: string) {
   const requestUrl = new URL(request.url);
-  const url = new URL(GOOGLE_AUTH_CONFIG.appLoginPath, requestUrl.origin);
+  const url = new URL(pathname, requestUrl.origin);
   const response = NextResponse.redirect(url);
   response.cookies.delete(AUTH_COOKIE_NAMES.googleOauthState);
 
@@ -86,7 +87,24 @@ export const handleGet: ApiHandler = async (ctx) => {
     return createLoginRedirect(ctx.request, domainErrorCode);
   }
 
-  const response = createSuccessRedirect(ctx.request);
+  let nextPath: string;
+
+  try {
+    nextPath = await getGoogleAuthNextPath(googleUser.email);
+  } catch (error) {
+    logger.error({
+      message: "Google OAuth user registration lookup failed.",
+      context: {
+        path: requestUrl.pathname,
+        traceId: ctx.traceId,
+      },
+      error,
+    });
+
+    return createLoginRedirect(ctx.request, LOGIN_ERROR_CODE.dbConnectionFailed);
+  }
+
+  const response = createSuccessRedirect(ctx.request, nextPath);
   setGoogleVerifiedEmailCookie(response, googleUser.email);
 
   return response;
