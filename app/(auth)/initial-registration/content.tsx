@@ -1,16 +1,16 @@
 import { jp } from "@/assets/translations/jp";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type InitialRegistrationContentProps = {
   googleVerifiedEmail: string;
 };
 
-type TextInputProps = {
-  id: string;
-  name: string;
-  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
-  placeholder?: string;
-  type?: string;
-};
+const editableInputClassName =
+  "h-11 rounded-md border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:border-sky-700 focus-visible:ring-sky-100";
+
+const readOnlyInputClassName =
+  "h-11 rounded-md border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-800";
 
 function FieldLabel({ htmlFor, children }: {
   htmlFor: string;
@@ -23,25 +23,6 @@ function FieldLabel({ htmlFor, children }: {
     >
       {children}
     </label>
-  );
-}
-
-function TextInput({
-  id,
-  name,
-  inputMode,
-  placeholder,
-  type = "text",
-}: TextInputProps) {
-  return (
-    <input
-      id={id}
-      name={name}
-      inputMode={inputMode}
-      type={type}
-      placeholder={placeholder}
-      className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-sky-700 focus:ring-2 focus:ring-sky-100"
-    />
   );
 }
 
@@ -65,56 +46,59 @@ export function InitialRegistrationContent({
               <FieldLabel htmlFor="name">
                 {jp.initialRegistration.labels.name}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="name"
                 name="name"
                 placeholder={jp.initialRegistration.placeholders.name}
+                className={editableInputClassName}
               />
 
               <FieldLabel htmlFor="email">
                 {jp.initialRegistration.labels.email}
               </FieldLabel>
-              <input
+              <Input
                 id="email"
                 name="email"
                 type="email"
                 value={googleVerifiedEmail}
                 readOnly
-                className="h-11 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-800 outline-none"
+                className={readOnlyInputClassName}
               />
 
               <FieldLabel htmlFor="password">
                 {jp.initialRegistration.labels.password}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 placeholder={jp.initialRegistration.placeholders.password}
+                className={editableInputClassName}
               />
 
               <FieldLabel htmlFor="passwordConfirmation">
                 {jp.initialRegistration.labels.passwordConfirmation}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="passwordConfirmation"
                 name="passwordConfirmation"
                 type="password"
                 placeholder={
                   jp.initialRegistration.placeholders.passwordConfirmation
                 }
+                className={editableInputClassName}
               />
 
               <FieldLabel htmlFor="companyName">
                 {jp.initialRegistration.labels.companyName}
               </FieldLabel>
-              <input
+              <Input
                 id="companyName"
                 name="companyName"
                 type="text"
                 value={jp.initialRegistration.companyName}
                 readOnly
-                className="h-11 rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-800 outline-none"
+                className={readOnlyInputClassName}
               />
             </div>
           </section>
@@ -128,10 +112,11 @@ export function InitialRegistrationContent({
               <FieldLabel htmlFor="bankName">
                 {jp.initialRegistration.labels.bankName}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="bankName"
                 name="bankName"
                 placeholder={jp.initialRegistration.placeholders.bankName}
+                className={editableInputClassName}
               />
 
               <FieldLabel htmlFor="accountType">
@@ -157,40 +142,43 @@ export function InitialRegistrationContent({
               <FieldLabel htmlFor="branchName">
                 {jp.initialRegistration.labels.branchName}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="branchName"
                 name="branchName"
                 placeholder={jp.initialRegistration.placeholders.branchName}
+                className={editableInputClassName}
               />
 
               <FieldLabel htmlFor="accountNumber">
                 {jp.initialRegistration.labels.accountNumber}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="accountNumber"
                 name="accountNumber"
                 inputMode="numeric"
                 placeholder={jp.initialRegistration.placeholders.accountNumber}
+                className={editableInputClassName}
               />
 
               <FieldLabel htmlFor="accountHolder">
                 {jp.initialRegistration.labels.accountHolder}
               </FieldLabel>
-              <TextInput
+              <Input
                 id="accountHolder"
                 name="accountHolder"
                 placeholder={jp.initialRegistration.placeholders.accountHolder}
+                className={editableInputClassName}
               />
             </div>
           </section>
 
           <div className="flex justify-center pt-2">
-            <button
-              type="button"
-              className="h-12 min-w-[220px] rounded-md bg-sky-800 px-6 text-base font-bold text-white transition hover:bg-sky-700"
+            <Button
+              type="submit"
+              className="h-12 min-w-[220px] rounded-md bg-sky-800 px-6 text-base font-bold text-white hover:bg-sky-700"
             >
               {jp.initialRegistration.submitButton}
-            </button>
+            </Button>
           </div>
         </form>
       </section>
