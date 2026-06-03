@@ -5,6 +5,7 @@ import {
   AUTH_COOKIE_MAX_AGE_SECONDS,
   AUTH_COOKIE_NAMES,
 } from "@/constants/auth";
+import { getCookieValue } from "@/lib/http/cookies";
 import { getEnv } from "@/libs/server/env/get-env";
 import { getRequiredEnv } from "@/libs/server/env/get-required-env";
 
@@ -97,6 +98,29 @@ export function setGoogleVerifiedEmailCookie(
 export async function getCurrentGoogleVerifiedEmail() {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAMES.googleVerifiedEmail)?.value;
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = verifySignedToken(token);
+
+    if (
+      !isGoogleVerifiedEmailPayload(payload) ||
+      payload.exp < Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+
+    return payload.email;
+  } catch {
+    return null;
+  }
+}
+
+export function getGoogleVerifiedEmailFromRequest(request: Request) {
+  const token = getCookieValue(request, AUTH_COOKIE_NAMES.googleVerifiedEmail);
 
   if (!token) {
     return null;

@@ -10,6 +10,7 @@ export const GOOGLE_AUTH_CONFIG = {
   tokenInfoEndpoint: "https://oauth2.googleapis.com/tokeninfo",
   startPath: "/api/v1/auth/google",
   callbackPath: "/api/v1/auth/google/callback",
+  initialRegistrationApiPath: "/api/v1/auth/initial-registration",
   loginPath: "/login",
   appLoginPath: "/app-login",
   initialRegistrationPath: "/initial-registration",

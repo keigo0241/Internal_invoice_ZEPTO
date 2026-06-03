@@ -56,6 +56,9 @@ export const jp = {
     },
     companyName: "株式会社Zepto AI",
     submitButton: "ユーザー情報登録",
+    submittingButton: "登録中",
+    registrationError:
+      "ユーザー情報を登録できませんでした。入力内容を確認してください。",
   },
   invoices: {
     title: "請求書一覧",

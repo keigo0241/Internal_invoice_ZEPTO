@@ -1,6 +1,11 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 import { jp } from "@/assets/translations/jp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 
 type InitialRegistrationContentProps = {
   googleVerifiedEmail: string;
@@ -11,6 +16,13 @@ const editableInputClassName =
 
 const readOnlyInputClassName =
   "h-11 rounded-md border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-800";
+
+type InitialRegistrationResponse = {
+  data?: {
+    redirectPath?: string;
+  };
+  message?: string;
+};
 
 function FieldLabel({ htmlFor, children }: {
   htmlFor: string;
@@ -29,6 +41,50 @@ function FieldLabel({ htmlFor, children }: {
 export function InitialRegistrationContent({
   googleVerifiedEmail,
 }: InitialRegistrationContentProps) {
+  const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      const response = await fetch(GOOGLE_AUTH_CONFIG.initialRegistrationApiPath, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          password: formData.get("password"),
+          passwordConfirmation: formData.get("passwordConfirmation"),
+          bankName: formData.get("bankName"),
+          accountType: formData.get("accountType"),
+          branchName: formData.get("branchName"),
+          accountNumber: formData.get("accountNumber"),
+          accountHolder: formData.get("accountHolder"),
+        }),
+      });
+      const result = (await response.json()) as InitialRegistrationResponse;
+
+      if (!response.ok) {
+        setErrorMessage(result.message ?? jp.initialRegistration.registrationError);
+
+        return;
+      }
+
+      router.push(result.data?.redirectPath ?? GOOGLE_AUTH_CONFIG.appLoginPath);
+    } catch {
+      setErrorMessage(jp.initialRegistration.registrationError);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-slate-100 px-6 py-8">
       <section className="mx-auto w-full max-w-[760px] rounded-md border border-slate-200 bg-white px-8 py-8 shadow-sm">
@@ -36,7 +92,7 @@ export function InitialRegistrationContent({
           {jp.initialRegistration.title}
         </h1>
 
-        <form className="mt-8 space-y-8">
+        <form className="mt-8 space-y-8" onSubmit={handleSubmit}>
           <section>
             <h2 className="border-b border-slate-200 pb-3 text-xl font-bold text-slate-900">
               {jp.initialRegistration.userSectionTitle}
@@ -49,7 +105,10 @@ export function InitialRegistrationContent({
               <Input
                 id="name"
                 name="name"
+                autoComplete="name"
+                maxLength={100}
                 placeholder={jp.initialRegistration.placeholders.name}
+                required
                 className={editableInputClassName}
               />
 
@@ -61,6 +120,7 @@ export function InitialRegistrationContent({
                 name="email"
                 type="email"
                 value={googleVerifiedEmail}
+                autoComplete="email"
                 readOnly
                 className={readOnlyInputClassName}
               />
@@ -71,8 +131,12 @@ export function InitialRegistrationContent({
               <Input
                 id="password"
                 name="password"
+                autoComplete="new-password"
+                maxLength={128}
+                minLength={8}
                 type="password"
                 placeholder={jp.initialRegistration.placeholders.password}
+                required
                 className={editableInputClassName}
               />
 
@@ -82,10 +146,14 @@ export function InitialRegistrationContent({
               <Input
                 id="passwordConfirmation"
                 name="passwordConfirmation"
+                autoComplete="new-password"
+                maxLength={128}
+                minLength={8}
                 type="password"
                 placeholder={
                   jp.initialRegistration.placeholders.passwordConfirmation
                 }
+                required
                 className={editableInputClassName}
               />
 
@@ -115,7 +183,10 @@ export function InitialRegistrationContent({
               <Input
                 id="bankName"
                 name="bankName"
+                autoComplete="off"
+                maxLength={100}
                 placeholder={jp.initialRegistration.placeholders.bankName}
+                required
                 className={editableInputClassName}
               />
 
@@ -125,6 +196,7 @@ export function InitialRegistrationContent({
               <select
                 id="accountType"
                 name="accountType"
+                required
                 className="h-11 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-sky-700 focus:ring-2 focus:ring-sky-100"
                 defaultValue="ordinary"
               >
@@ -145,7 +217,10 @@ export function InitialRegistrationContent({
               <Input
                 id="branchName"
                 name="branchName"
+                autoComplete="off"
+                maxLength={100}
                 placeholder={jp.initialRegistration.placeholders.branchName}
+                required
                 className={editableInputClassName}
               />
 
@@ -155,8 +230,11 @@ export function InitialRegistrationContent({
               <Input
                 id="accountNumber"
                 name="accountNumber"
+                autoComplete="off"
                 inputMode="numeric"
+                maxLength={20}
                 placeholder={jp.initialRegistration.placeholders.accountNumber}
+                required
                 className={editableInputClassName}
               />
 
@@ -166,18 +244,30 @@ export function InitialRegistrationContent({
               <Input
                 id="accountHolder"
                 name="accountHolder"
+                autoComplete="off"
+                maxLength={100}
                 placeholder={jp.initialRegistration.placeholders.accountHolder}
+                required
                 className={editableInputClassName}
               />
             </div>
           </section>
 
+          {errorMessage ? (
+            <p className="text-center text-sm font-semibold text-red-600">
+              {errorMessage}
+            </p>
+          ) : null}
+
           <div className="flex justify-center pt-2">
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="h-12 min-w-[220px] rounded-md bg-sky-800 px-6 text-base font-bold text-white hover:bg-sky-700"
             >
-              {jp.initialRegistration.submitButton}
+              {isSubmitting
+                ? jp.initialRegistration.submittingButton
+                : jp.initialRegistration.submitButton}
             </Button>
           </div>
         </form>
