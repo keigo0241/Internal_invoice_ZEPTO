@@ -6,6 +6,10 @@ import { jp } from "@/assets/translations/jp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
+import {
+  USER_FIELD_LIMITS,
+  USER_FIELD_PATTERNS,
+} from "@/features/users/types/user-field-rules";
 
 type InitialRegistrationContentProps = {
   googleVerifiedEmail: string;
@@ -106,7 +110,7 @@ export function InitialRegistrationContent({
                 id="name"
                 name="name"
                 autoComplete="name"
-                maxLength={100}
+                maxLength={USER_FIELD_LIMITS.name}
                 placeholder={jp.initialRegistration.placeholders.name}
                 required
                 className={editableInputClassName}
@@ -132,8 +136,9 @@ export function InitialRegistrationContent({
                 id="password"
                 name="password"
                 autoComplete="new-password"
-                maxLength={128}
-                minLength={8}
+                maxLength={USER_FIELD_LIMITS.passwordMax}
+                minLength={USER_FIELD_LIMITS.passwordMin}
+                pattern={USER_FIELD_PATTERNS.halfWidthAlphanumeric}
                 type="password"
                 placeholder={jp.initialRegistration.placeholders.password}
                 required
@@ -147,8 +152,9 @@ export function InitialRegistrationContent({
                 id="passwordConfirmation"
                 name="passwordConfirmation"
                 autoComplete="new-password"
-                maxLength={128}
-                minLength={8}
+                maxLength={USER_FIELD_LIMITS.passwordMax}
+                minLength={USER_FIELD_LIMITS.passwordMin}
+                pattern={USER_FIELD_PATTERNS.halfWidthAlphanumeric}
                 type="password"
                 placeholder={
                   jp.initialRegistration.placeholders.passwordConfirmation
@@ -184,7 +190,8 @@ export function InitialRegistrationContent({
                 id="bankName"
                 name="bankName"
                 autoComplete="off"
-                maxLength={100}
+                maxLength={USER_FIELD_LIMITS.bankName}
+                pattern={USER_FIELD_PATTERNS.fullWidthText}
                 placeholder={jp.initialRegistration.placeholders.bankName}
                 required
                 className={editableInputClassName}
@@ -218,7 +225,8 @@ export function InitialRegistrationContent({
                 id="branchName"
                 name="branchName"
                 autoComplete="off"
-                maxLength={100}
+                maxLength={USER_FIELD_LIMITS.branchName}
+                pattern={USER_FIELD_PATTERNS.fullWidthText}
                 placeholder={jp.initialRegistration.placeholders.branchName}
                 required
                 className={editableInputClassName}
@@ -232,7 +240,8 @@ export function InitialRegistrationContent({
                 name="accountNumber"
                 autoComplete="off"
                 inputMode="numeric"
-                maxLength={20}
+                maxLength={USER_FIELD_LIMITS.accountNumber}
+                pattern={USER_FIELD_PATTERNS.halfWidthNumeric}
                 placeholder={jp.initialRegistration.placeholders.accountNumber}
                 required
                 className={editableInputClassName}
@@ -245,7 +254,8 @@ export function InitialRegistrationContent({
                 id="accountHolder"
                 name="accountHolder"
                 autoComplete="off"
-                maxLength={100}
+                maxLength={USER_FIELD_LIMITS.accountHolder}
+                pattern={USER_FIELD_PATTERNS.fullWidthText}
                 placeholder={jp.initialRegistration.placeholders.accountHolder}
                 required
                 className={editableInputClassName}

@@ -31,7 +31,7 @@ const form = {
   accountType: "ordinary",
   branchName: "〇〇支店",
   accountNumber: "1234567",
-  accountHolder: "ツジイ ケイゴ",
+  accountHolder: "ツジイ　ケイゴ",
 };
 
 describe("registerInitialUser", () => {

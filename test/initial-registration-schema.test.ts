@@ -10,7 +10,7 @@ const validForm = {
   accountType: "ordinary",
   branchName: "〇〇支店",
   accountNumber: "1234567",
-  accountHolder: "ツジイ ケイゴ",
+  accountHolder: "ツジイ　ケイゴ",
 };
 
 describe("parseInitialRegistrationForm", () => {
@@ -41,5 +41,48 @@ describe("parseInitialRegistrationForm", () => {
         bankName: "",
       }),
     ).toThrow(BadRequestError);
+  });
+
+  it("throws when password contains characters other than half-width alphanumerics", () => {
+    expect(() =>
+      parseInitialRegistrationForm({
+        ...validForm,
+        password: "password-123",
+        passwordConfirmation: "password-123",
+      }),
+    ).toThrow(BadRequestError);
+  });
+
+  it("throws when bank fields contain half-width characters", () => {
+    expect(() =>
+      parseInitialRegistrationForm({
+        ...validForm,
+        bankName: "Yucho Bank",
+      }),
+    ).toThrow(BadRequestError);
+  });
+
+  it("throws when account number contains characters other than half-width digits", () => {
+    expect(() =>
+      parseInitialRegistrationForm({
+        ...validForm,
+        accountNumber: "123abc",
+      }),
+    ).toThrow(BadRequestError);
+  });
+
+  it("allows full-width alphanumerics and full-width spaces in full-width fields", () => {
+    expect(
+      parseInitialRegistrationForm({
+        ...validForm,
+        bankName: "三菱ＵＦＪ銀行",
+        branchName: "四〇八",
+        accountHolder: "ツジイ　ケイゴ",
+      }),
+    ).toMatchObject({
+      bankName: "三菱ＵＦＪ銀行",
+      branchName: "四〇八",
+      accountHolder: "ツジイ　ケイゴ",
+    });
   });
 });

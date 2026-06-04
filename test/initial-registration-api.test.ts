@@ -34,7 +34,7 @@ const validBody = {
   accountType: "ordinary",
   branchName: "四〇八",
   accountNumber: "5554833",
-  accountHolder: "ツジイ ケイゴ",
+  accountHolder: "ツジイ　ケイゴ",
 };
 
 function createInitialRegistrationRequest({
