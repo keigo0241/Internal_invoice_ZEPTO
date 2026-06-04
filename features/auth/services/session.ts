@@ -73,6 +73,10 @@ function isGoogleVerifiedEmailPayload(
   return typeof payload.email === "string" && typeof payload.exp === "number";
 }
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
 export function setGoogleVerifiedEmailCookie(
   response: NextResponse,
   email: string,
@@ -80,7 +84,7 @@ export function setGoogleVerifiedEmailCookie(
   response.cookies.set(
     AUTH_COOKIE_NAMES.googleVerifiedEmail,
     createSignedToken({
-      email,
+      email: normalizeEmail(email),
       exp:
         Math.floor(Date.now() / 1000) +
         AUTH_COOKIE_MAX_AGE_SECONDS.googleVerifiedEmail,
@@ -108,12 +112,12 @@ export async function getCurrentGoogleVerifiedEmail() {
 
     if (
       !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp < Math.floor(Date.now() / 1000)
+      payload.exp <= Math.floor(Date.now() / 1000)
     ) {
       return null;
     }
 
-    return payload.email;
+    return normalizeEmail(payload.email);
   } catch {
     return null;
   }
@@ -131,12 +135,12 @@ export function getGoogleVerifiedEmailFromRequest(request: Request) {
 
     if (
       !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp < Math.floor(Date.now() / 1000)
+      payload.exp <= Math.floor(Date.now() / 1000)
     ) {
       return null;
     }
 
-    return payload.email;
+    return normalizeEmail(payload.email);
   } catch {
     return null;
   }

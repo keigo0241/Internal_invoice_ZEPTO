@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
-import {
-  createInitialRegistrationUser,
-  existsUserByEmail,
-} from "@/features/auth/repositories/user-repository";
+import { createInitialRegistrationUser } from "@/features/auth/repositories/create-initial-registration-user";
+import { existsUserByEmail } from "@/features/auth/repositories/exists-user-by-email";
 import { registerInitialUser } from "@/features/auth/services/initial-registration";
 import { hashPassword } from "@/features/auth/services/password";
+import { BankAccountType } from "@/features/users/types/bank-account";
 import { ConflictError } from "@/lib/api/errors";
 
-vi.mock("@/features/auth/repositories/user-repository", () => ({
+vi.mock("@/features/auth/repositories/create-initial-registration-user", () => ({
   createInitialRegistrationUser: vi.fn(),
+}));
+
+vi.mock("@/features/auth/repositories/exists-user-by-email", () => ({
   existsUserByEmail: vi.fn(),
 }));
 
@@ -27,9 +29,11 @@ const form = {
   name: "辻井啓悟",
   password: "password123",
   passwordConfirmation: "password123",
-  bankName: "〇〇銀行",
-  accountType: "ordinary",
-  branchName: "〇〇支店",
+  address: null,
+  phoneNumber: null,
+  bankName: "信金中央金庫",
+  accountType: BankAccountType.Ordinary,
+  branchName: "北海道",
   accountNumber: "1234567",
   accountHolder: "ツジイ　ケイゴ",
 };
@@ -59,6 +63,8 @@ describe("registerInitialUser", () => {
       name: form.name,
       email: "keigo@zpt-ai.com",
       passwordHash: "hashed-password",
+      address: form.address,
+      phoneNumber: form.phoneNumber,
       bankName: form.bankName,
       accountType: form.accountType,
       branchName: form.branchName,

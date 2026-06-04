@@ -1,4 +1,5 @@
-import { withApi } from "@/lib/api/with-api";
+import { withAuth } from "@/features/auth/guards/with-auth";
+import { requireJsonRequestGuard } from "@/lib/api/guards/require-json-request-guard";
 import { handlePost } from "./post";
 
-export const POST = withApi(handlePost, []);
+export const POST = withAuth(handlePost, [requireJsonRequestGuard]);

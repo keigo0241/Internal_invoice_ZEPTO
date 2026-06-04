@@ -1,35 +1,17 @@
-import { db } from "@/libs/db";
 import { UserRole } from "@/constants/roles";
 import { type CreateInitialRegistrationUserParams } from "@/features/auth/types/initial-registration";
-
-type UserRegistrationRow = {
-  isRegistered: boolean;
-};
+import { db } from "@/libs/db";
 
 type CreatedUserRow = {
   id: string;
 };
 
-export async function existsUserByEmail(email: string) {
-  const result = await db.query<UserRegistrationRow>(
-    `
-      select exists(
-        select 1
-        from users
-        where lower(email) = lower($1)
-          and deleted_at is null
-      ) as "isRegistered"
-    `,
-    [email],
-  );
-
-  return result.rows[0]?.isRegistered ?? false;
-}
-
 export async function createInitialRegistrationUser({
   name,
   email,
   passwordHash,
+  address,
+  phoneNumber,
   bankName,
   accountType,
   branchName,
@@ -42,6 +24,8 @@ export async function createInitialRegistrationUser({
         name,
         email,
         password_hash,
+        address,
+        phone_number,
         role,
         bank_name,
         branch_name,
@@ -51,13 +35,15 @@ export async function createInitialRegistrationUser({
         status,
         amount_invoice
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', '0')
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', '0')
       returning id
     `,
     [
       name,
       email,
       passwordHash,
+      address,
+      phoneNumber,
       UserRole.User,
       bankName,
       branchName,

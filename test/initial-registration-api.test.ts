@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 import { registerInitialUser } from "@/features/auth/services/initial-registration";
 import { getGoogleVerifiedEmailFromRequest } from "@/features/auth/services/session";
+import { BankAccountType } from "@/features/users/types/bank-account";
 import { ConflictError } from "@/lib/api/errors";
 import { POST } from "@/app/api/v1/auth/initial-registration/route";
 
@@ -30,9 +31,13 @@ const validBody = {
   name: "辻井啓悟",
   password: "password123",
   passwordConfirmation: "password123",
-  bankName: "ゆうちょ銀行",
-  accountType: "ordinary",
-  branchName: "四〇八",
+  address: "",
+  phoneNumber: "",
+  bankName: "信金中央金庫",
+  bankCode: "1000",
+  accountType: BankAccountType.Ordinary,
+  branchName: "北海道",
+  branchCode: "001",
   accountNumber: "5554833",
   accountHolder: "ツジイ　ケイゴ",
 };
@@ -78,10 +83,25 @@ describe("POST /api/v1/auth/initial-registration", () => {
         redirectPath: GOOGLE_AUTH_CONFIG.appLoginPath,
       },
     });
-    expect(mockedRegisterInitialUser).toHaveBeenCalledWith({
+    const registerParams = mockedRegisterInitialUser.mock.calls[0]?.[0];
+
+    expect(registerParams).toEqual({
       googleVerifiedEmail: "k.tsujii@zpt-ai.com",
-      form: validBody,
+      form: {
+        accountHolder: validBody.accountHolder,
+        accountNumber: validBody.accountNumber,
+        accountType: validBody.accountType,
+        address: null,
+        bankName: validBody.bankName,
+        branchName: validBody.branchName,
+        name: validBody.name,
+        password: validBody.password,
+        passwordConfirmation: validBody.passwordConfirmation,
+        phoneNumber: null,
+      },
     });
+    expect(registerParams?.form).not.toHaveProperty("bankCode");
+    expect(registerParams?.form).not.toHaveProperty("branchCode");
   });
 
   it("returns 401 when Google verified email is missing", async () => {

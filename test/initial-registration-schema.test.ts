@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { parseInitialRegistrationForm } from "@/features/auth/schemas/initial-registration-schema";
+import { BankAccountType } from "@/features/users/types/bank-account";
 import { BadRequestError } from "@/lib/api/errors";
 
 const validForm = {
   name: "辻井啓悟",
   password: "password123",
   passwordConfirmation: "password123",
-  bankName: "〇〇銀行",
-  accountType: "ordinary",
-  branchName: "〇〇支店",
+  address: "",
+  phoneNumber: "",
+  bankName: "信金中央金庫",
+  bankCode: "1000",
+  accountType: BankAccountType.Ordinary,
+  branchName: "北海道",
+  branchCode: "001",
   accountNumber: "1234567",
   accountHolder: "ツジイ　ケイゴ",
 };
@@ -22,6 +27,21 @@ describe("parseInitialRegistrationForm", () => {
       }),
     ).toMatchObject({
       name: "辻井啓悟",
+      address: null,
+      phoneNumber: null,
+    });
+  });
+
+  it("returns trimmed optional address and phone number when entered", () => {
+    expect(
+      parseInitialRegistrationForm({
+        ...validForm,
+        address: " 東京都〇〇区〇〇 ",
+        phoneNumber: " 09012345678 ",
+      }),
+    ).toMatchObject({
+      address: "東京都〇〇区〇〇",
+      phoneNumber: "09012345678",
     });
   });
 
@@ -75,13 +95,15 @@ describe("parseInitialRegistrationForm", () => {
     expect(
       parseInitialRegistrationForm({
         ...validForm,
-        bankName: "三菱ＵＦＪ銀行",
-        branchName: "四〇八",
+        bankName: "信金中央金庫",
+        bankCode: "1000",
+        branchName: "北海道",
+        branchCode: "001",
         accountHolder: "ツジイ　ケイゴ",
       }),
     ).toMatchObject({
-      bankName: "三菱ＵＦＪ銀行",
-      branchName: "四〇八",
+      bankName: "信金中央金庫",
+      branchName: "北海道",
       accountHolder: "ツジイ　ケイゴ",
     });
   });

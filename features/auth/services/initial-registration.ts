@@ -1,8 +1,6 @@
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
-import {
-  createInitialRegistrationUser,
-  existsUserByEmail,
-} from "@/features/auth/repositories/user-repository";
+import { createInitialRegistrationUser } from "@/features/auth/repositories/create-initial-registration-user";
+import { existsUserByEmail } from "@/features/auth/repositories/exists-user-by-email";
 import { type InitialRegistrationForm } from "@/features/auth/types/initial-registration";
 import { hashPassword } from "@/features/auth/services/password";
 import { ConflictError } from "@/lib/api/errors";
@@ -28,6 +26,8 @@ export async function registerInitialUser({
     name: form.name,
     email: googleVerifiedEmail,
     passwordHash,
+    address: form.address,
+    phoneNumber: form.phoneNumber,
     bankName: form.bankName,
     accountType: form.accountType,
     branchName: form.branchName,

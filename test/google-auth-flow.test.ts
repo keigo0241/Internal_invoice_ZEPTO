@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 import { getGoogleAuthNextPath } from "@/features/auth/services/google-auth-flow";
-import { existsUserByEmail } from "@/features/auth/repositories/user-repository";
+import { existsUserByEmail } from "@/features/auth/repositories/exists-user-by-email";
 
-vi.mock("@/features/auth/repositories/user-repository", () => ({
+vi.mock("@/features/auth/repositories/exists-user-by-email", () => ({
   existsUserByEmail: vi.fn(),
 }));
 
