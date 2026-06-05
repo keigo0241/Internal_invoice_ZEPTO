@@ -20,9 +20,17 @@ export const jp = {
   },
   appLogin: {
     title: "アプリ内ログイン",
-    googleVerifiedEmailLabel: "Google認証済みメールアドレス",
-    nextImplementationNote:
-      "次の実装で、初回利用判定とアプリ内ログインを接続します。",
+    description: "登録済みのメールアドレスとパスワードを入力してください。",
+    labels: {
+      email: "メールアドレス",
+      password: "パスワード",
+    },
+    placeholders: {
+      email: "example@zpt-ai.com",
+      password: "半角英数字で入力",
+    },
+    loginButton: "ログイン",
+    passwordResetLink: "パスワードをお忘れの場合",
   },
   initialRegistration: {
     title: "初回登録",
