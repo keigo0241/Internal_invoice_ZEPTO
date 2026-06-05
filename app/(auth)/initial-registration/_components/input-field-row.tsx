@@ -5,12 +5,14 @@ import { FieldLabel } from "./field-label";
 type InputFieldRowProps = Omit<ComponentProps<typeof Input>, "id"> & {
   id: string;
   label: ReactNode;
+  errorMessage?: string;
   isRequired?: boolean;
 };
 
 export function InputFieldRow({
   id,
   label,
+  errorMessage,
   isRequired,
   ...inputProps
 }: InputFieldRowProps) {
@@ -19,7 +21,14 @@ export function InputFieldRow({
       <FieldLabel htmlFor={id} isRequired={isRequired}>
         {label}
       </FieldLabel>
-      <Input id={id} {...inputProps} />
+      <div>
+        <Input id={id} aria-invalid={Boolean(errorMessage)} {...inputProps} />
+        {errorMessage ? (
+          <p className="mt-1 text-xs font-semibold text-red-600">
+            {errorMessage}
+          </p>
+        ) : null}
+      </div>
     </>
   );
 }

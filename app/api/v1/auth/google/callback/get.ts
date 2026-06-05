@@ -15,6 +15,7 @@ import { setGoogleVerifiedEmailCookie } from "@/features/auth/services/session";
 import { type ApiHandler } from "@/lib/api/types";
 import { getCookieValue } from "@/lib/http/cookies";
 import { logger } from "@/lib/logger/logger";
+import { normalizeEmail } from "@/utils/validator/input/email";
 
 function createLoginRedirect(request: Request, errorCode: LoginErrorCode) {
   const requestUrl = new URL(request.url);
@@ -71,7 +72,8 @@ export const handleGet: ApiHandler = async (ctx) => {
     return createLoginRedirect(ctx.request, LOGIN_ERROR_CODE.googleAuthFailed);
   }
 
-  const domainErrorCode = getGoogleLoginErrorCode(googleUser.email);
+  const normalizedGoogleEmail = normalizeEmail(googleUser.email);
+  const domainErrorCode = getGoogleLoginErrorCode(normalizedGoogleEmail);
 
   if (domainErrorCode) {
     logger.warn({
@@ -79,7 +81,7 @@ export const handleGet: ApiHandler = async (ctx) => {
       context: {
         path: requestUrl.pathname,
         traceId: ctx.traceId,
-        emailDomain: googleUser.email.split("@")[1],
+        emailDomain: normalizedGoogleEmail.split("@")[1],
         errorCode: domainErrorCode,
       },
     });
@@ -90,7 +92,7 @@ export const handleGet: ApiHandler = async (ctx) => {
   let nextPath: string;
 
   try {
-    nextPath = await getGoogleAuthNextPath(googleUser.email);
+    nextPath = await getGoogleAuthNextPath(normalizedGoogleEmail);
   } catch (error) {
     logger.error({
       message: "Google OAuth user registration lookup failed.",
@@ -105,7 +107,7 @@ export const handleGet: ApiHandler = async (ctx) => {
   }
 
   const response = createSuccessRedirect(ctx.request, nextPath);
-  setGoogleVerifiedEmailCookie(response, googleUser.email);
+  setGoogleVerifiedEmailCookie(response, normalizedGoogleEmail);
 
   return response;
 };

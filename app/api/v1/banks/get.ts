@@ -3,7 +3,7 @@ import { type AuthenticatedApiHandler } from "@/features/auth/guards/with-auth";
 
 export const handleGet: AuthenticatedApiHandler = async (ctx) => {
   const requestUrl = new URL(ctx.request.url);
-  const keyword = requestUrl.searchParams.get("keyword");
+  const keyword = requestUrl.searchParams.get("keyword")?.trim() ?? "";
 
   return {
     body: {

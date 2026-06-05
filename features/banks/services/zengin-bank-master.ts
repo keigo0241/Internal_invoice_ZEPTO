@@ -7,23 +7,15 @@ import {
 const BANK_SEARCH_LIMIT = 20;
 const BRANCH_SEARCH_LIMIT = 50;
 
-function normalizeKeyword(keyword: string | null) {
-  return keyword?.trim().toLowerCase() ?? "";
-}
-
-function includesKeyword(value: string, keyword: string) {
-  return value.toLowerCase().includes(keyword);
-}
-
 function matchesBankKeyword(bank: BankOption, keyword: string) {
   if (!keyword) {
     return true;
   }
 
   return (
-    includesKeyword(bank.code, keyword) ||
-    includesKeyword(bank.name, keyword) ||
-    includesKeyword(bank.kana, keyword)
+    bank.code.toLowerCase().includes(keyword) ||
+    bank.name.toLowerCase().includes(keyword) ||
+    bank.kana.toLowerCase().includes(keyword)
   );
 }
 
@@ -33,14 +25,14 @@ function matchesBranchKeyword(branch: BankBranchOption, keyword: string) {
   }
 
   return (
-    includesKeyword(branch.code, keyword) ||
-    includesKeyword(branch.name, keyword) ||
-    includesKeyword(branch.kana, keyword)
+    branch.code.toLowerCase().includes(keyword) ||
+    branch.name.toLowerCase().includes(keyword) ||
+    branch.kana.toLowerCase().includes(keyword)
   );
 }
 
-export function searchBanks(keyword: string | null): BankOption[] {
-  const normalizedKeyword = normalizeKeyword(keyword);
+export function searchBanks(keyword: string): BankOption[] {
+  const normalizedKeyword = keyword.trim().toLowerCase();
 
   return Object.values(zenginCode)
     .map((bank) => ({
@@ -54,7 +46,7 @@ export function searchBanks(keyword: string | null): BankOption[] {
 
 export function searchBankBranches(
   bankCode: string,
-  keyword: string | null,
+  keyword: string,
 ): BankBranchOption[] {
   const bank = zenginCode[bankCode];
 
@@ -62,7 +54,7 @@ export function searchBankBranches(
     return [];
   }
 
-  const normalizedKeyword = normalizeKeyword(keyword);
+  const normalizedKeyword = keyword.trim().toLowerCase();
 
   return Object.values(bank.branches)
     .map((branch) => ({

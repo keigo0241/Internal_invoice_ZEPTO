@@ -8,6 +8,7 @@ import {
 import { getCookieValue } from "@/lib/http/cookies";
 import { getEnv } from "@/libs/server/env/get-env";
 import { getRequiredEnv } from "@/libs/server/env/get-required-env";
+import { normalizeEmail } from "@/utils/validator/input/email";
 
 const AUTH_ENV_KEYS = {
   sessionSecret: "AUTH_SESSION_SECRET",
@@ -73,18 +74,14 @@ function isGoogleVerifiedEmailPayload(
   return typeof payload.email === "string" && typeof payload.exp === "number";
 }
 
-function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
-}
-
 export function setGoogleVerifiedEmailCookie(
   response: NextResponse,
-  email: string,
+  normalizedEmail: string,
 ) {
   response.cookies.set(
     AUTH_COOKIE_NAMES.googleVerifiedEmail,
     createSignedToken({
-      email: normalizeEmail(email),
+      email: normalizedEmail,
       exp:
         Math.floor(Date.now() / 1000) +
         AUTH_COOKIE_MAX_AGE_SECONDS.googleVerifiedEmail,

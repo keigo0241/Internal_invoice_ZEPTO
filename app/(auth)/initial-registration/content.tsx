@@ -1,7 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import {
+  type ChangeEvent,
+  type FormEvent,
+  useEffect,
+  useState,
+} from "react";
 import { jp } from "@/assets/translations/jp";
 import { Button } from "@/components/ui/button";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
@@ -14,21 +19,19 @@ import {
   BankAccountType,
 } from "@/features/users/types/bank-account";
 import {
-  USER_FIELD_LIMITS,
-  USER_FIELD_PATTERNS,
-} from "@/utils/validator/users/user-field-rules";
+  getFirstInitialRegistrationError,
+  INITIAL_REGISTRATION_FIELD_LIMITS,
+  INITIAL_REGISTRATION_FIELD_PATTERNS,
+  type InitialRegistrationFieldErrors,
+  type InitialRegistrationFieldName,
+  type InitialRegistrationValidationValues,
+  isInitialRegistrationFieldName,
+  validateInitialRegistrationSubmitValues,
+} from "@/utils/validator/users/initial-registration";
 import {
-  validatePasswordConfirmationText,
-  validatePasswordText,
-} from "@/utils/validator/input/password";
-import { validateOptionalPhoneText } from "@/utils/validator/input/phone";
-import {
-  validateFullWidthText,
-  validateHalfWidthNumericText,
-  validateMaxLengthText,
-  validateOptionalMaxLengthText,
-  validateRequiredText,
-} from "@/utils/validator/input/text";
+  filterHalfWidthAlphanumericInput,
+  filterHalfWidthNumericInput,
+} from "@/utils/validator/users/initial-registration-input-filter";
 import { InputFieldRow } from "./_components/input-field-row";
 import {
   type SelectFieldOption,
@@ -76,28 +79,13 @@ type SearchBankBranchesResponse = {
   data?: BankBranchOption[];
 };
 
-type InitialRegistrationFormValues = {
-  name: string;
-  password: string;
-  passwordConfirmation: string;
-  address: string;
-  phoneNumber: string;
-  bankName: string;
-  bankCode: string;
-  accountType: string;
-  branchName: string;
-  branchCode: string;
-  accountNumber: string;
-  accountHolder: string;
-};
-
 function getFormStringValue(formData: FormData, name: string) {
   return String(formData.get(name) ?? "");
 }
 
 function getInitialRegistrationFormValues(
   formData: FormData,
-): InitialRegistrationFormValues {
+): InitialRegistrationValidationValues {
   return {
     name: getFormStringValue(formData, "name"),
     password: getFormStringValue(formData, "password"),
@@ -112,94 +100,6 @@ function getInitialRegistrationFormValues(
     accountNumber: getFormStringValue(formData, "accountNumber"),
     accountHolder: getFormStringValue(formData, "accountHolder"),
   };
-}
-
-function validateInitialRegistrationFormValues(
-  values: InitialRegistrationFormValues,
-) {
-  return (
-    validateRequiredText(values.name, jp.initialRegistration.labels.name) ??
-    validateMaxLengthText(
-      values.name,
-      USER_FIELD_LIMITS.name,
-      jp.initialRegistration.labels.name,
-    ) ??
-    validatePasswordText({
-      value: values.password,
-      fieldName: jp.initialRegistration.labels.password,
-      minLength: USER_FIELD_LIMITS.passwordMin,
-      maxLength: USER_FIELD_LIMITS.passwordMax,
-    }) ??
-    validatePasswordConfirmationText(
-      values.password,
-      values.passwordConfirmation,
-      jp.initialRegistration.labels.passwordConfirmation,
-    ) ??
-    validateOptionalMaxLengthText(
-      values.address,
-      USER_FIELD_LIMITS.address,
-      jp.initialRegistration.labels.address,
-    ) ??
-    validateOptionalPhoneText(
-      values.phoneNumber,
-      USER_FIELD_LIMITS.phoneNumber,
-      jp.initialRegistration.labels.phoneNumber,
-    ) ??
-    validateRequiredText(values.bankName, jp.initialRegistration.labels.bankName) ??
-    validateMaxLengthText(
-      values.bankName,
-      USER_FIELD_LIMITS.bankName,
-      jp.initialRegistration.labels.bankName,
-    ) ??
-    validateFullWidthText(
-      values.bankName,
-      jp.initialRegistration.labels.bankName,
-    ) ??
-    validateRequiredText(values.bankCode, jp.initialRegistration.labels.bankName) ??
-    validateRequiredText(
-      values.branchName,
-      jp.initialRegistration.labels.branchName,
-    ) ??
-    validateMaxLengthText(
-      values.branchName,
-      USER_FIELD_LIMITS.branchName,
-      jp.initialRegistration.labels.branchName,
-    ) ??
-    validateFullWidthText(
-      values.branchName,
-      jp.initialRegistration.labels.branchName,
-    ) ??
-    validateRequiredText(
-      values.branchCode,
-      jp.initialRegistration.labels.branchName,
-    ) ??
-    validateRequiredText(
-      values.accountNumber,
-      jp.initialRegistration.labels.accountNumber,
-    ) ??
-    validateMaxLengthText(
-      values.accountNumber,
-      USER_FIELD_LIMITS.accountNumber,
-      jp.initialRegistration.labels.accountNumber,
-    ) ??
-    validateHalfWidthNumericText(
-      values.accountNumber,
-      jp.initialRegistration.labels.accountNumber,
-    ) ??
-    validateRequiredText(
-      values.accountHolder,
-      jp.initialRegistration.labels.accountHolder,
-    ) ??
-    validateMaxLengthText(
-      values.accountHolder,
-      USER_FIELD_LIMITS.accountHolder,
-      jp.initialRegistration.labels.accountHolder,
-    ) ??
-    validateFullWidthText(
-      values.accountHolder,
-      jp.initialRegistration.labels.accountHolder,
-    )
-  );
 }
 
 async function parseInitialRegistrationResponse(response: Response) {
@@ -261,13 +161,31 @@ export function InitialRegistrationContent({
 }: InitialRegistrationContentProps) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] =
+    useState<InitialRegistrationFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [bankName, setBankName] = useState("");
   const [bankOptions, setBankOptions] = useState<BankOption[]>([]);
   const [selectedBankCode, setSelectedBankCode] = useState("");
   const [branchName, setBranchName] = useState("");
   const [branchOptions, setBranchOptions] = useState<BankBranchOption[]>([]);
   const [selectedBranchCode, setSelectedBranchCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+
+  function clearFieldErrors(fieldNames: InitialRegistrationFieldName[]) {
+    setFieldErrors((currentErrors) =>
+      fieldNames.reduce<InitialRegistrationFieldErrors>(
+        (nextErrors, fieldName) => ({
+          ...nextErrors,
+          [fieldName]: undefined,
+        }),
+        currentErrors,
+      ),
+    );
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -325,10 +243,49 @@ export function InitialRegistrationContent({
       setBankOptions([]);
       setSelectedBankCode("");
     }
+
+    clearFieldErrors(["bankName", "bankCode", "branchName", "branchCode"]);
   }
 
   function handleBranchNameChange(event: ChangeEvent<HTMLInputElement>) {
     setBranchName(event.target.value);
+    clearFieldErrors(["branchName", "branchCode"]);
+  }
+
+  function handlePasswordChange(event: ChangeEvent<HTMLInputElement>) {
+    setPassword(filterHalfWidthAlphanumericInput(event.target.value));
+    clearFieldErrors(["password", "passwordConfirmation"]);
+  }
+
+  function handlePasswordConfirmationChange(
+    event: ChangeEvent<HTMLInputElement>,
+  ) {
+    setPasswordConfirmation(filterHalfWidthAlphanumericInput(event.target.value));
+    clearFieldErrors(["passwordConfirmation"]);
+  }
+
+  function handlePhoneNumberChange(event: ChangeEvent<HTMLInputElement>) {
+    setPhoneNumber(filterHalfWidthNumericInput(event.target.value));
+    clearFieldErrors(["phoneNumber"]);
+  }
+
+  function handleAccountNumberChange(event: ChangeEvent<HTMLInputElement>) {
+    setAccountNumber(filterHalfWidthNumericInput(event.target.value));
+    clearFieldErrors(["accountNumber"]);
+  }
+
+  function handleFormChange(event: FormEvent<HTMLFormElement>) {
+    const target = event.target;
+
+    if (
+      !(target instanceof HTMLInputElement || target instanceof HTMLSelectElement) ||
+      !isInitialRegistrationFieldName(target.name) ||
+      !fieldErrors[target.name]
+    ) {
+      return;
+    }
+
+    clearFieldErrors([target.name]);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -338,9 +295,12 @@ export function InitialRegistrationContent({
 
     const formData = new FormData(event.currentTarget);
     const formValues = getInitialRegistrationFormValues(formData);
-    const validationError = validateInitialRegistrationFormValues(formValues);
+    const nextFieldErrors = validateInitialRegistrationSubmitValues(formValues);
+    const validationError =
+      getFirstInitialRegistrationError(nextFieldErrors);
 
     if (validationError) {
+      setFieldErrors(nextFieldErrors);
       setErrorMessage(validationError);
       setIsSubmitting(false);
 
@@ -378,7 +338,11 @@ export function InitialRegistrationContent({
           {jp.initialRegistration.title}
         </h1>
 
-        <form className="mt-8 space-y-8" onSubmit={handleSubmit}>
+        <form
+          className="mt-8 space-y-8"
+          onChange={handleFormChange}
+          onSubmit={handleSubmit}
+        >
           <section>
             <h2 className="border-b border-slate-200 pb-3 text-xl font-bold text-slate-900">
               {jp.initialRegistration.userSectionTitle}
@@ -390,9 +354,10 @@ export function InitialRegistrationContent({
                 label={jp.initialRegistration.labels.name}
                 name="name"
                 autoComplete="name"
-                maxLength={USER_FIELD_LIMITS.name}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.name}
                 placeholder={jp.initialRegistration.placeholders.name}
                 required
+                errorMessage={fieldErrors.name}
                 className={editableInputClassName}
               />
 
@@ -412,12 +377,15 @@ export function InitialRegistrationContent({
                 label={jp.initialRegistration.labels.password}
                 name="password"
                 autoComplete="new-password"
-                maxLength={USER_FIELD_LIMITS.passwordMax}
-                minLength={USER_FIELD_LIMITS.passwordMin}
-                pattern={USER_FIELD_PATTERNS.halfWidthAlphanumeric}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.passwordMax}
+                minLength={INITIAL_REGISTRATION_FIELD_LIMITS.passwordMin}
+                pattern={INITIAL_REGISTRATION_FIELD_PATTERNS.halfWidthAlphanumeric}
                 type="password"
                 placeholder={jp.initialRegistration.placeholders.password}
                 required
+                value={password}
+                onChange={handlePasswordChange}
+                errorMessage={fieldErrors.password}
                 className={editableInputClassName}
               />
 
@@ -426,14 +394,17 @@ export function InitialRegistrationContent({
                 label={jp.initialRegistration.labels.passwordConfirmation}
                 name="passwordConfirmation"
                 autoComplete="new-password"
-                maxLength={USER_FIELD_LIMITS.passwordMax}
-                minLength={USER_FIELD_LIMITS.passwordMin}
-                pattern={USER_FIELD_PATTERNS.halfWidthAlphanumeric}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.passwordMax}
+                minLength={INITIAL_REGISTRATION_FIELD_LIMITS.passwordMin}
+                pattern={INITIAL_REGISTRATION_FIELD_PATTERNS.halfWidthAlphanumeric}
                 type="password"
                 placeholder={
                   jp.initialRegistration.placeholders.passwordConfirmation
                 }
                 required
+                value={passwordConfirmation}
+                onChange={handlePasswordConfirmationChange}
+                errorMessage={fieldErrors.passwordConfirmation}
                 className={editableInputClassName}
               />
 
@@ -444,8 +415,9 @@ export function InitialRegistrationContent({
                 name="address"
                 type="text"
                 autoComplete="street-address"
-                maxLength={USER_FIELD_LIMITS.address}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.address}
                 placeholder={jp.initialRegistration.placeholders.address}
+                errorMessage={fieldErrors.address}
                 className={editableInputClassName}
               />
 
@@ -457,8 +429,11 @@ export function InitialRegistrationContent({
                 type="tel"
                 autoComplete="tel"
                 inputMode="tel"
-                maxLength={USER_FIELD_LIMITS.phoneNumber}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.phoneNumber}
                 placeholder={jp.initialRegistration.placeholders.phoneNumber}
+                value={phoneNumber}
+                onChange={handlePhoneNumberChange}
+                errorMessage={fieldErrors.phoneNumber}
                 className={editableInputClassName}
               />
             </div>
@@ -476,12 +451,13 @@ export function InitialRegistrationContent({
                 name="bankName"
                 autoComplete="off"
                 list={bankNameListId}
-                maxLength={USER_FIELD_LIMITS.bankName}
-                pattern={USER_FIELD_PATTERNS.fullWidthText}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.bankName}
+                pattern={INITIAL_REGISTRATION_FIELD_PATTERNS.fullWidthText}
                 placeholder={jp.initialRegistration.placeholders.bankName}
                 required
                 value={bankName}
                 onChange={handleBankNameChange}
+                errorMessage={fieldErrors.bankName ?? fieldErrors.bankCode}
                 className={editableInputClassName}
               />
               <input type="hidden" name="bankCode" value={selectedBankCode} />
@@ -502,12 +478,13 @@ export function InitialRegistrationContent({
                 name="branchName"
                 autoComplete="off"
                 list={branchNameListId}
-                maxLength={USER_FIELD_LIMITS.branchName}
-                pattern={USER_FIELD_PATTERNS.fullWidthText}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.branchName}
+                pattern={INITIAL_REGISTRATION_FIELD_PATTERNS.fullWidthText}
                 placeholder={jp.initialRegistration.placeholders.branchName}
                 required
                 value={branchName}
                 onChange={handleBranchNameChange}
+                errorMessage={fieldErrors.branchName ?? fieldErrors.branchCode}
                 className={editableInputClassName}
               />
               <input type="hidden" name="branchCode" value={selectedBranchCode} />
@@ -518,10 +495,13 @@ export function InitialRegistrationContent({
                 name="accountNumber"
                 autoComplete="off"
                 inputMode="numeric"
-                maxLength={USER_FIELD_LIMITS.accountNumber}
-                pattern={USER_FIELD_PATTERNS.halfWidthNumeric}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.accountNumber}
+                pattern={INITIAL_REGISTRATION_FIELD_PATTERNS.halfWidthNumeric}
                 placeholder={jp.initialRegistration.placeholders.accountNumber}
                 required
+                value={accountNumber}
+                onChange={handleAccountNumberChange}
+                errorMessage={fieldErrors.accountNumber}
                 className={editableInputClassName}
               />
 
@@ -530,10 +510,11 @@ export function InitialRegistrationContent({
                 label={jp.initialRegistration.labels.accountHolder}
                 name="accountHolder"
                 autoComplete="off"
-                maxLength={USER_FIELD_LIMITS.accountHolder}
-                pattern={USER_FIELD_PATTERNS.fullWidthText}
+                maxLength={INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder}
+                pattern={INITIAL_REGISTRATION_FIELD_PATTERNS.fullWidthText}
                 placeholder={jp.initialRegistration.placeholders.accountHolder}
                 required
+                errorMessage={fieldErrors.accountHolder}
                 className={editableInputClassName}
               />
             </div>

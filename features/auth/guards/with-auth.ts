@@ -5,6 +5,7 @@ import {
   type ApiHandlerResult,
 } from "@/lib/api/types";
 import { UnauthorizedError } from "@/lib/api/errors";
+import { runGuards } from "@/lib/api/pipeline";
 import { withApi } from "@/lib/api/with-api";
 
 export type AuthenticatedApiContext = ApiContext & {
@@ -28,11 +29,18 @@ export function withAuth(
       throw new UnauthorizedError("Google認証からやり直してください。");
     }
 
-    return handler({
+    const authenticatedCtx = {
       ...ctx,
       auth: {
         googleVerifiedEmail,
       },
-    });
-  }, guards);
+    };
+    const guardResult = await runGuards(authenticatedCtx, guards);
+
+    if (typeof guardResult !== "undefined") {
+      return guardResult;
+    }
+
+    return handler(authenticatedCtx);
+  });
 }

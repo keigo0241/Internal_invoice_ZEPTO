@@ -9,6 +9,7 @@ export type SelectFieldOption = {
 type SelectFieldRowProps = Omit<ComponentProps<"select">, "children" | "id"> & {
   id: string;
   label: ReactNode;
+  errorMessage?: string;
   isRequired?: boolean;
   options: SelectFieldOption[];
 };
@@ -16,6 +17,7 @@ type SelectFieldRowProps = Omit<ComponentProps<"select">, "children" | "id"> & {
 export function SelectFieldRow({
   id,
   label,
+  errorMessage,
   isRequired,
   options,
   ...selectProps
@@ -25,13 +27,20 @@ export function SelectFieldRow({
       <FieldLabel htmlFor={id} isRequired={isRequired}>
         {label}
       </FieldLabel>
-      <select id={id} {...selectProps}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <div>
+        <select id={id} aria-invalid={Boolean(errorMessage)} {...selectProps}>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {errorMessage ? (
+          <p className="mt-1 text-xs font-semibold text-red-600">
+            {errorMessage}
+          </p>
+        ) : null}
+      </div>
     </>
   );
 }

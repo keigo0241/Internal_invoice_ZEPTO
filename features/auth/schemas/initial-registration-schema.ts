@@ -5,7 +5,11 @@ import {
   isValidBranchNameByCode,
 } from "@/features/banks/services/zengin-bank-master";
 import { isBankAccountType } from "@/features/users/types/bank-account";
-import { USER_FIELD_LIMITS } from "@/utils/validator/users/user-field-rules";
+import {
+  validateBankCodeText,
+  validateBranchCodeText,
+} from "@/utils/validator/banks/bank-code";
+import { INITIAL_REGISTRATION_FIELD_LIMITS } from "@/utils/validator/users/initial-registration";
 import {
   validatePasswordConfirmationText,
   validatePasswordText,
@@ -78,13 +82,19 @@ export function parseInitialRegistrationForm(body: unknown): InitialRegistration
   const accountNumber = getStringValue(values.accountNumber, "口座番号");
   const accountHolder = getStringValue(values.accountHolder, "口座名義");
 
-  assertValidInput(validateMaxLengthText(name, USER_FIELD_LIMITS.name, "氏名"));
+  assertValidInput(
+    validateMaxLengthText(
+      name,
+      INITIAL_REGISTRATION_FIELD_LIMITS.name,
+      "氏名",
+    ),
+  );
   assertValidInput(
     validatePasswordText({
       value: password,
       fieldName: "パスワード",
-      minLength: USER_FIELD_LIMITS.passwordMin,
-      maxLength: USER_FIELD_LIMITS.passwordMax,
+      minLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMin,
+      maxLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMax,
     }),
   );
   assertValidInput(
@@ -95,26 +105,39 @@ export function parseInitialRegistrationForm(body: unknown): InitialRegistration
     ),
   );
   assertValidInput(
-    validateOptionalMaxLengthText(address ?? "", USER_FIELD_LIMITS.address, "住所"),
+    validateOptionalMaxLengthText(
+      address ?? "",
+      INITIAL_REGISTRATION_FIELD_LIMITS.address,
+      "住所",
+    ),
   );
   assertValidInput(
     validateOptionalPhoneText(
       phoneNumber ?? "",
-      USER_FIELD_LIMITS.phoneNumber,
+      INITIAL_REGISTRATION_FIELD_LIMITS.phoneNumber,
       "電話番号",
     ),
   );
   assertValidInput(
-    validateMaxLengthText(bankName, USER_FIELD_LIMITS.bankName, "銀行名"),
+    validateMaxLengthText(
+      bankName,
+      INITIAL_REGISTRATION_FIELD_LIMITS.bankName,
+      "銀行名",
+    ),
   );
   assertValidInput(validateFullWidthText(bankName, "銀行名"));
+  assertValidInput(validateBankCodeText(bankCode, "銀行名"));
 
   if (!isValidBankNameByCode(bankCode, bankName)) {
     throw new BadRequestError("銀行名は候補から選択してください。");
   }
 
   assertValidInput(
-    validateMaxLengthText(accountType, USER_FIELD_LIMITS.accountType, "預金種目"),
+    validateMaxLengthText(
+      accountType,
+      INITIAL_REGISTRATION_FIELD_LIMITS.accountType,
+      "預金種目",
+    ),
   );
 
   if (!isBankAccountType(accountType)) {
@@ -122,9 +145,14 @@ export function parseInitialRegistrationForm(body: unknown): InitialRegistration
   }
 
   assertValidInput(
-    validateMaxLengthText(branchName, USER_FIELD_LIMITS.branchName, "店名"),
+    validateMaxLengthText(
+      branchName,
+      INITIAL_REGISTRATION_FIELD_LIMITS.branchName,
+      "店名",
+    ),
   );
   assertValidInput(validateFullWidthText(branchName, "店名"));
+  assertValidInput(validateBranchCodeText(branchCode, "店名"));
 
   if (!isValidBranchNameByCode({ bankCode, branchCode, branchName })) {
     throw new BadRequestError("店名は候補から選択してください。");
@@ -133,7 +161,7 @@ export function parseInitialRegistrationForm(body: unknown): InitialRegistration
   assertValidInput(
     validateMaxLengthText(
       accountNumber,
-      USER_FIELD_LIMITS.accountNumber,
+      INITIAL_REGISTRATION_FIELD_LIMITS.accountNumber,
       "口座番号",
     ),
   );
@@ -141,7 +169,7 @@ export function parseInitialRegistrationForm(body: unknown): InitialRegistration
   assertValidInput(
     validateMaxLengthText(
       accountHolder,
-      USER_FIELD_LIMITS.accountHolder,
+      INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder,
       "口座名義",
     ),
   );
