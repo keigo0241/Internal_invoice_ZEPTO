@@ -5,7 +5,6 @@ import { validateMaxLengthText } from "@/utils/validator/input/text";
 export function validateOptionalPhoneText(
   value: string,
   maxLength: number,
-  fieldName: string,
 ) {
   const normalizedValue = value.trim();
 
@@ -16,7 +15,7 @@ export function validateOptionalPhoneText(
   const maxLengthError = validateMaxLengthText(
     normalizedValue,
     maxLength,
-    fieldName,
+    "電話番号",
   );
 
   if (maxLengthError) {
@@ -27,7 +26,7 @@ export function validateOptionalPhoneText(
     !isNumeric(normalizedValue) &&
     !isMobilePhone(normalizedValue, "ja-JP")
   ) {
-    return `${fieldName}を確認してください。`;
+    return "電話番号を確認してください。";
   }
 
   return null;

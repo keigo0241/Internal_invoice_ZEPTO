@@ -8,9 +8,9 @@ export function isEmailLike(value: string) {
   return isEmail(normalizeEmail(value));
 }
 
-export function validateEmailText(value: string, fieldName: string) {
+export function validateEmailText(value: string) {
   if (!isEmailLike(value)) {
-    return `${fieldName}を確認してください。`;
+    return "メールアドレスを確認してください。";
   }
 
   return null;

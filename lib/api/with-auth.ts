@@ -1,11 +1,11 @@
 import { getGoogleVerifiedEmailFromRequest } from "@/features/auth/services/session";
+import { UnauthorizedError } from "@/lib/api/errors";
+import { runGuards } from "@/lib/api/pipeline";
 import {
   type ApiContext,
   type ApiGuard,
   type ApiHandlerResult,
 } from "@/lib/api/types";
-import { UnauthorizedError } from "@/lib/api/errors";
-import { runGuards } from "@/lib/api/pipeline";
 import { withApi } from "@/lib/api/with-api";
 
 export type AuthenticatedApiContext = ApiContext & {

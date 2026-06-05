@@ -7,27 +7,18 @@ import {
 const BANK_SEARCH_LIMIT = 20;
 const BRANCH_SEARCH_LIMIT = 50;
 
-function matchesBankKeyword(bank: BankOption, keyword: string) {
+function matchesKeyword(
+  option: Pick<BankOption, "code" | "name" | "kana">,
+  keyword: string,
+) {
   if (!keyword) {
     return true;
   }
 
   return (
-    bank.code.toLowerCase().includes(keyword) ||
-    bank.name.toLowerCase().includes(keyword) ||
-    bank.kana.toLowerCase().includes(keyword)
-  );
-}
-
-function matchesBranchKeyword(branch: BankBranchOption, keyword: string) {
-  if (!keyword) {
-    return true;
-  }
-
-  return (
-    branch.code.toLowerCase().includes(keyword) ||
-    branch.name.toLowerCase().includes(keyword) ||
-    branch.kana.toLowerCase().includes(keyword)
+    option.code.toLowerCase().includes(keyword) ||
+    option.name.toLowerCase().includes(keyword) ||
+    option.kana.toLowerCase().includes(keyword)
   );
 }
 
@@ -40,7 +31,7 @@ export function searchBanks(keyword: string): BankOption[] {
       name: bank.name,
       kana: bank.kana,
     }))
-    .filter((bank) => matchesBankKeyword(bank, normalizedKeyword))
+    .filter((bank) => matchesKeyword(bank, normalizedKeyword))
     .slice(0, BANK_SEARCH_LIMIT);
 }
 
@@ -62,7 +53,7 @@ export function searchBankBranches(
       name: branch.name,
       kana: branch.kana,
     }))
-    .filter((branch) => matchesBranchKeyword(branch, normalizedKeyword))
+    .filter((branch) => matchesKeyword(branch, normalizedKeyword))
     .slice(0, BRANCH_SEARCH_LIMIT);
 }
 

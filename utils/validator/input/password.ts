@@ -6,39 +6,39 @@ import {
 
 type ValidatePasswordTextParams = {
   value: string;
-  fieldName: string;
   minLength: number;
   maxLength: number;
 };
 
 export function validatePasswordText({
   value,
-  fieldName,
   minLength,
   maxLength,
 }: ValidatePasswordTextParams) {
-  const requiredError = validateRequiredText(value, fieldName);
+  const requiredError = validateRequiredText(value, "パスワード");
 
   if (requiredError) {
     return requiredError;
   }
 
   if (value.trim().length < minLength) {
-    return `${fieldName}は${minLength}文字以上で入力してください。`;
+    return `パスワードは${minLength}文字以上で入力してください。`;
   }
 
   return (
-    validateMaxLengthText(value, maxLength, fieldName) ??
-    validateHalfWidthAlphanumericText(value, fieldName)
+    validateMaxLengthText(value, maxLength, "パスワード") ??
+    validateHalfWidthAlphanumericText(value, "パスワード")
   );
 }
 
 export function validatePasswordConfirmationText(
   password: string,
   passwordConfirmation: string,
-  fieldName: string,
 ) {
-  const requiredError = validateRequiredText(passwordConfirmation, fieldName);
+  const requiredError = validateRequiredText(
+    passwordConfirmation,
+    "パスワード確認用",
+  );
 
   if (requiredError) {
     return requiredError;

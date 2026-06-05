@@ -78,7 +78,7 @@ function validateBankNameValue(values: InitialRegistrationValidationValues) {
     ) ??
     validateFullWidthText(values.bankName, "銀行名") ??
     validateRequiredText(values.bankCode, "銀行名") ??
-    validateBankCodeText(values.bankCode, "銀行名")
+    validateBankCodeText(values.bankCode)
   );
 }
 
@@ -92,7 +92,38 @@ function validateBranchNameValue(values: InitialRegistrationValidationValues) {
     ) ??
     validateFullWidthText(values.branchName, "店名") ??
     validateRequiredText(values.branchCode, "店名") ??
-    validateBranchCodeText(values.branchCode, "店名")
+    validateBranchCodeText(values.branchCode)
+  );
+}
+
+export function validateNameText(value: string) {
+  return (
+    validateRequiredText(value, "氏名") ??
+    validateMaxLengthText(
+      value,
+      INITIAL_REGISTRATION_FIELD_LIMITS.name,
+      "氏名",
+    )
+  );
+}
+
+export function validateOptionalAddressText(value: string) {
+  return validateOptionalMaxLengthText(
+    value,
+    INITIAL_REGISTRATION_FIELD_LIMITS.address,
+    "住所",
+  );
+}
+
+export function validateAccountHolderText(value: string) {
+  return (
+    validateRequiredText(value, "口座名義") ??
+    validateMaxLengthText(
+      value,
+      INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder,
+      "口座名義",
+    ) ??
+    validateFullWidthText(value, "口座名義")
   );
 }
 
@@ -102,18 +133,10 @@ export function validateInitialRegistrationInputValue(
 ) {
   switch (fieldName) {
     case "name":
-      return (
-        validateRequiredText(values.name, "氏名") ??
-        validateMaxLengthText(
-          values.name,
-          INITIAL_REGISTRATION_FIELD_LIMITS.name,
-          "氏名",
-        )
-      );
+      return validateNameText(values.name);
     case "password":
       return validatePasswordText({
         value: values.password,
-        fieldName: "パスワード",
         minLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMin,
         maxLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMax,
       });
@@ -121,19 +144,13 @@ export function validateInitialRegistrationInputValue(
       return validatePasswordConfirmationText(
         values.password,
         values.passwordConfirmation,
-        "パスワード確認用",
       );
     case "address":
-      return validateOptionalMaxLengthText(
-        values.address,
-        INITIAL_REGISTRATION_FIELD_LIMITS.address,
-        "住所",
-      );
+      return validateOptionalAddressText(values.address);
     case "phoneNumber":
       return validateOptionalPhoneText(
         values.phoneNumber,
         INITIAL_REGISTRATION_FIELD_LIMITS.phoneNumber,
-        "電話番号",
       );
     case "bankName":
     case "bankCode":
@@ -154,15 +171,7 @@ export function validateInitialRegistrationInputValue(
         validateHalfWidthNumericText(values.accountNumber, "口座番号")
       );
     case "accountHolder":
-      return (
-        validateRequiredText(values.accountHolder, "口座名義") ??
-        validateMaxLengthText(
-          values.accountHolder,
-          INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder,
-          "口座名義",
-        ) ??
-        validateFullWidthText(values.accountHolder, "口座名義")
-      );
+      return validateAccountHolderText(values.accountHolder);
   }
 }
 
