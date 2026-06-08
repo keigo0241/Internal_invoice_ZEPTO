@@ -9,7 +9,15 @@ import {
   validateBankCodeText,
   validateBranchCodeText,
 } from "@/utils/validator/banks/bank-code";
-import { INITIAL_REGISTRATION_FIELD_LIMITS } from "@/utils/validator/users/initial-registration";
+import {
+  INITIAL_REGISTRATION_FIELD_LIMITS,
+  type InitialRegistrationFieldName,
+  type InitialRegistrationValidationErrorCode,
+  validateAccountHolderText,
+  validateNameText,
+  validateOptionalAddressText,
+} from "@/utils/validator/users/initial-registration";
+import { getInitialRegistrationValidationMessage } from "@/utils/validator/users/initial-registration-validation-messages";
 import {
   validatePasswordConfirmationText,
   validatePasswordText,
@@ -19,7 +27,6 @@ import {
   validateFullWidthText,
   validateHalfWidthNumericText,
   validateMaxLengthText,
-  validateOptionalMaxLengthText,
 } from "@/utils/validator/input/text";
 
 function getStringValue(value: unknown, fieldName: string) {
@@ -27,13 +34,13 @@ function getStringValue(value: unknown, fieldName: string) {
     throw new BadRequestError(`${fieldName}を入力してください。`);
   }
 
-  const trimmedValue = value.trim();
+  const normalizedValue = value.trim();
 
-  if (!trimmedValue) {
+  if (!normalizedValue) {
     throw new BadRequestError(`${fieldName}を入力してください。`);
   }
 
-  return trimmedValue;
+  return normalizedValue;
 }
 
 function getOptionalStringValue(value: unknown, fieldName: string) {
@@ -45,9 +52,9 @@ function getOptionalStringValue(value: unknown, fieldName: string) {
     throw new BadRequestError(`${fieldName}を確認してください。`);
   }
 
-  const trimmedValue = value.trim();
+  const normalizedValue = value.trim();
 
-  return trimmedValue || null;
+  return normalizedValue || null;
 }
 
 function parseInitialRegistrationBody(body: unknown) {
@@ -58,133 +65,195 @@ function parseInitialRegistrationBody(body: unknown) {
   return body as Record<string, unknown>;
 }
 
-function assertValidInput(errorMessage: string | null) {
-  if (errorMessage) {
-    throw new BadRequestError(errorMessage);
+function assertValidInput(
+  fieldName: InitialRegistrationFieldName,
+  errorCode: InitialRegistrationValidationErrorCode | null,
+) {
+  if (errorCode) {
+    throw new BadRequestError(
+      getInitialRegistrationValidationMessage(fieldName, errorCode),
+    );
   }
 }
 
-export function parseInitialRegistrationForm(body: unknown): InitialRegistrationForm {
-  const values = parseInitialRegistrationBody(body);
-  const name = getStringValue(values.name, "氏名");
-  const password = getStringValue(values.password, "パスワード");
-  const passwordConfirmation = getStringValue(
-    values.passwordConfirmation,
-    "パスワード確認用",
-  );
-  const address = getOptionalStringValue(values.address, "住所");
-  const phoneNumber = getOptionalStringValue(values.phoneNumber, "電話番号");
-  const bankName = getStringValue(values.bankName, "銀行名");
-  const bankCode = getStringValue(values.bankCode, "銀行名");
-  const accountType = getStringValue(values.accountType, "預金種目");
-  const branchName = getStringValue(values.branchName, "店名");
-  const branchCode = getStringValue(values.branchCode, "店名");
-  const accountNumber = getStringValue(values.accountNumber, "口座番号");
-  const accountHolder = getStringValue(values.accountHolder, "口座名義");
+function validatePassword(rawValue: unknown) {
+  const normalizedPassword = getStringValue(rawValue, "パスワード");
 
   assertValidInput(
-    validateMaxLengthText(
-      name,
-      INITIAL_REGISTRATION_FIELD_LIMITS.name,
-      "氏名",
-    ),
-  );
-  assertValidInput(
+    "password",
     validatePasswordText({
-      value: password,
-      fieldName: "パスワード",
+      value: normalizedPassword,
       minLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMin,
       maxLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMax,
     }),
   );
-  assertValidInput(
-    validatePasswordConfirmationText(
-      password,
-      passwordConfirmation,
-      "パスワード確認用",
-    ),
-  );
-  assertValidInput(
-    validateOptionalMaxLengthText(
-      address ?? "",
-      INITIAL_REGISTRATION_FIELD_LIMITS.address,
-      "住所",
-    ),
-  );
-  assertValidInput(
-    validateOptionalPhoneText(
-      phoneNumber ?? "",
-      INITIAL_REGISTRATION_FIELD_LIMITS.phoneNumber,
-      "電話番号",
-    ),
-  );
-  assertValidInput(
-    validateMaxLengthText(
-      bankName,
-      INITIAL_REGISTRATION_FIELD_LIMITS.bankName,
-      "銀行名",
-    ),
-  );
-  assertValidInput(validateFullWidthText(bankName, "銀行名"));
-  assertValidInput(validateBankCodeText(bankCode, "銀行名"));
 
-  if (!isValidBankNameByCode(bankCode, bankName)) {
+  return normalizedPassword;
+}
+
+function validateName(rawValue: unknown) {
+  const normalizedName = getStringValue(rawValue, "氏名");
+
+  assertValidInput("name", validateNameText(normalizedName));
+
+  return normalizedName;
+}
+
+function validatePasswordConfirmation(
+  rawValue: unknown,
+  password: string,
+) {
+  const normalizedPasswordConfirmation = getStringValue(
+    rawValue,
+    "パスワード確認用",
+  );
+
+  assertValidInput(
+    "passwordConfirmation",
+    validatePasswordConfirmationText(password, normalizedPasswordConfirmation),
+  );
+
+  return normalizedPasswordConfirmation;
+}
+
+function validatePhoneNumber(rawValue: unknown) {
+  const normalizedPhoneNumber = getOptionalStringValue(rawValue, "電話番号");
+
+  assertValidInput(
+    "phoneNumber",
+    validateOptionalPhoneText(
+      normalizedPhoneNumber ?? "",
+      INITIAL_REGISTRATION_FIELD_LIMITS.phoneNumber,
+    ),
+  );
+
+  return normalizedPhoneNumber;
+}
+
+function validateAddress(rawValue: unknown) {
+  const normalizedAddress = getOptionalStringValue(rawValue, "住所");
+
+  assertValidInput(
+    "address",
+    validateOptionalAddressText(normalizedAddress ?? ""),
+  );
+
+  return normalizedAddress;
+}
+
+function validateBankCode(rawValue: unknown) {
+  const normalizedBankCode = getStringValue(rawValue, "銀行名");
+
+  assertValidInput("bankCode", validateBankCodeText(normalizedBankCode));
+
+  return normalizedBankCode;
+}
+
+function validateBranchCode(rawValue: unknown) {
+  const normalizedBranchCode = getStringValue(rawValue, "店名");
+
+  assertValidInput("branchCode", validateBranchCodeText(normalizedBranchCode));
+
+  return normalizedBranchCode;
+}
+
+function validateAccountHolder(rawValue: unknown) {
+  const normalizedAccountHolder = getStringValue(rawValue, "口座名義");
+
+  assertValidInput(
+    "accountHolder",
+    validateAccountHolderText(normalizedAccountHolder),
+  );
+
+  return normalizedAccountHolder;
+}
+
+export function parseInitialRegistrationForm(body: unknown): InitialRegistrationForm {
+  const values = parseInitialRegistrationBody(body);
+  const normalizedName = validateName(values.name);
+  const normalizedPassword = validatePassword(values.password);
+  const normalizedPasswordConfirmation = validatePasswordConfirmation(
+    values.passwordConfirmation,
+    normalizedPassword,
+  );
+  const normalizedAddress = validateAddress(values.address);
+  const normalizedPhoneNumber = validatePhoneNumber(values.phoneNumber);
+  const normalizedBankName = getStringValue(values.bankName, "銀行名");
+  const normalizedBankCode = validateBankCode(values.bankCode);
+  const normalizedAccountType = getStringValue(values.accountType, "預金種目");
+  const normalizedBranchName = getStringValue(values.branchName, "店名");
+  const normalizedBranchCode = validateBranchCode(values.branchCode);
+  const normalizedAccountNumber = getStringValue(
+    values.accountNumber,
+    "口座番号",
+  );
+  const normalizedAccountHolder = validateAccountHolder(values.accountHolder);
+
+  assertValidInput(
+    "bankName",
+    validateMaxLengthText(
+      normalizedBankName,
+      INITIAL_REGISTRATION_FIELD_LIMITS.bankName,
+    ),
+  );
+  assertValidInput("bankName", validateFullWidthText(normalizedBankName));
+
+  if (!isValidBankNameByCode(normalizedBankCode, normalizedBankName)) {
     throw new BadRequestError("銀行名は候補から選択してください。");
   }
 
   assertValidInput(
+    "accountType",
     validateMaxLengthText(
-      accountType,
+      normalizedAccountType,
       INITIAL_REGISTRATION_FIELD_LIMITS.accountType,
-      "預金種目",
     ),
   );
 
-  if (!isBankAccountType(accountType)) {
+  if (!isBankAccountType(normalizedAccountType)) {
     throw new BadRequestError("預金種目を確認してください。");
   }
 
   assertValidInput(
+    "branchName",
     validateMaxLengthText(
-      branchName,
+      normalizedBranchName,
       INITIAL_REGISTRATION_FIELD_LIMITS.branchName,
-      "店名",
     ),
   );
-  assertValidInput(validateFullWidthText(branchName, "店名"));
-  assertValidInput(validateBranchCodeText(branchCode, "店名"));
+  assertValidInput("branchName", validateFullWidthText(normalizedBranchName));
 
-  if (!isValidBranchNameByCode({ bankCode, branchCode, branchName })) {
+  if (
+    !isValidBranchNameByCode({
+      bankCode: normalizedBankCode,
+      branchCode: normalizedBranchCode,
+      branchName: normalizedBranchName,
+    })
+  ) {
     throw new BadRequestError("店名は候補から選択してください。");
   }
 
   assertValidInput(
+    "accountNumber",
     validateMaxLengthText(
-      accountNumber,
+      normalizedAccountNumber,
       INITIAL_REGISTRATION_FIELD_LIMITS.accountNumber,
-      "口座番号",
     ),
   );
-  assertValidInput(validateHalfWidthNumericText(accountNumber, "口座番号"));
   assertValidInput(
-    validateMaxLengthText(
-      accountHolder,
-      INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder,
-      "口座名義",
-    ),
+    "accountNumber",
+    validateHalfWidthNumericText(normalizedAccountNumber),
   );
-  assertValidInput(validateFullWidthText(accountHolder, "口座名義"));
-
   return {
-    name,
-    password,
-    passwordConfirmation,
-    address,
-    phoneNumber,
-    bankName,
-    accountType,
-    branchName,
-    accountNumber,
-    accountHolder,
+    name: normalizedName,
+    password: normalizedPassword,
+    passwordConfirmation: normalizedPasswordConfirmation,
+    address: normalizedAddress,
+    phoneNumber: normalizedPhoneNumber,
+    bankName: normalizedBankName,
+    accountType: normalizedAccountType,
+    branchName: normalizedBranchName,
+    accountNumber: normalizedAccountNumber,
+    accountHolder: normalizedAccountHolder,
   };
 }

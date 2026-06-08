@@ -1,23 +1,28 @@
 import { searchBankBranches } from "@/features/banks/services/zengin-bank-master";
-import { type AuthenticatedApiHandler } from "@/features/auth/guards/with-auth";
 import { BadRequestError } from "@/lib/api/errors";
+import { type AuthenticatedApiHandler } from "@/lib/api/with-auth";
 import { validateBankCodeText } from "@/utils/validator/banks/bank-code";
 
-export const handleGet: AuthenticatedApiHandler = async (ctx) => {
-  const bankCode = ctx.params?.bankCode?.trim() ?? "";
-
-  const bankCodeError = validateBankCodeText(bankCode, "銀行コード");
+function parseBankCode(value: string | undefined) {
+  const normalizedBankCode = value?.trim() ?? "";
+  const bankCodeError = validateBankCodeText(normalizedBankCode);
 
   if (bankCodeError) {
-    throw new BadRequestError(bankCodeError);
+    throw new BadRequestError("銀行コードを確認してください。");
   }
 
+  return normalizedBankCode;
+}
+
+export const handleGet: AuthenticatedApiHandler = async (ctx) => {
+  const bankCode = parseBankCode(ctx.params?.bankCode);
+
   const requestUrl = new URL(ctx.request.url);
-  const keyword = requestUrl.searchParams.get("keyword")?.trim() ?? "";
+  const normalizedKeyword = requestUrl.searchParams.get("keyword")?.trim() ?? "";
 
   return {
     body: {
-      data: searchBankBranches(bankCode, keyword),
+      data: searchBankBranches(bankCode, normalizedKeyword),
     },
   };
 };

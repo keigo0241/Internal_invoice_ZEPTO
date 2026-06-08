@@ -1,20 +1,27 @@
 import {
   validateBankCodeText,
   validateBranchCodeText,
+  type BankCodeValidationErrorCode,
 } from "@/utils/validator/banks/bank-code";
 import {
   validatePasswordConfirmationText,
   validatePasswordText,
+  type PasswordValidationErrorCode,
 } from "@/utils/validator/input/password";
-import { validateOptionalPhoneText } from "@/utils/validator/input/phone";
+import {
+  validateOptionalPhoneText,
+  type PhoneValidationErrorCode,
+} from "@/utils/validator/input/phone";
 import {
   INPUT_TEXT_PATTERNS,
+  type TextValidationErrorCode,
   validateFullWidthText,
   validateHalfWidthNumericText,
   validateMaxLengthText,
   validateOptionalMaxLengthText,
   validateRequiredText,
 } from "@/utils/validator/input/text";
+import { getInitialRegistrationValidationMessage } from "@/utils/validator/users/initial-registration-validation-messages";
 
 export const INITIAL_REGISTRATION_FIELD_LIMITS = {
   name: 100,
@@ -53,6 +60,12 @@ export type InitialRegistrationFieldErrors = Partial<
   Record<InitialRegistrationFieldName, string>
 >;
 
+export type InitialRegistrationValidationErrorCode =
+  | TextValidationErrorCode
+  | PasswordValidationErrorCode
+  | PhoneValidationErrorCode
+  | BankCodeValidationErrorCode;
+
 export const INITIAL_REGISTRATION_FIELD_NAMES = [
   "name",
   "password",
@@ -70,29 +83,52 @@ export const INITIAL_REGISTRATION_FIELD_NAMES = [
 
 function validateBankNameValue(values: InitialRegistrationValidationValues) {
   return (
-    validateRequiredText(values.bankName, "銀行名") ??
+    validateRequiredText(values.bankName) ??
     validateMaxLengthText(
       values.bankName,
       INITIAL_REGISTRATION_FIELD_LIMITS.bankName,
-      "銀行名",
     ) ??
-    validateFullWidthText(values.bankName, "銀行名") ??
-    validateRequiredText(values.bankCode, "銀行名") ??
-    validateBankCodeText(values.bankCode, "銀行名")
+    validateFullWidthText(values.bankName) ??
+    validateRequiredText(values.bankCode) ??
+    validateBankCodeText(values.bankCode)
   );
 }
 
 function validateBranchNameValue(values: InitialRegistrationValidationValues) {
   return (
-    validateRequiredText(values.branchName, "店名") ??
+    validateRequiredText(values.branchName) ??
     validateMaxLengthText(
       values.branchName,
       INITIAL_REGISTRATION_FIELD_LIMITS.branchName,
-      "店名",
     ) ??
-    validateFullWidthText(values.branchName, "店名") ??
-    validateRequiredText(values.branchCode, "店名") ??
-    validateBranchCodeText(values.branchCode, "店名")
+    validateFullWidthText(values.branchName) ??
+    validateRequiredText(values.branchCode) ??
+    validateBranchCodeText(values.branchCode)
+  );
+}
+
+export function validateNameText(value: string) {
+  return (
+    validateRequiredText(value) ??
+    validateMaxLengthText(value, INITIAL_REGISTRATION_FIELD_LIMITS.name)
+  );
+}
+
+export function validateOptionalAddressText(value: string) {
+  return validateOptionalMaxLengthText(
+    value,
+    INITIAL_REGISTRATION_FIELD_LIMITS.address,
+  );
+}
+
+export function validateAccountHolderText(value: string) {
+  return (
+    validateRequiredText(value) ??
+    validateMaxLengthText(
+      value,
+      INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder,
+    ) ??
+    validateFullWidthText(value)
   );
 }
 
@@ -102,18 +138,10 @@ export function validateInitialRegistrationInputValue(
 ) {
   switch (fieldName) {
     case "name":
-      return (
-        validateRequiredText(values.name, "氏名") ??
-        validateMaxLengthText(
-          values.name,
-          INITIAL_REGISTRATION_FIELD_LIMITS.name,
-          "氏名",
-        )
-      );
+      return validateNameText(values.name);
     case "password":
       return validatePasswordText({
         value: values.password,
-        fieldName: "パスワード",
         minLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMin,
         maxLength: INITIAL_REGISTRATION_FIELD_LIMITS.passwordMax,
       });
@@ -121,19 +149,13 @@ export function validateInitialRegistrationInputValue(
       return validatePasswordConfirmationText(
         values.password,
         values.passwordConfirmation,
-        "パスワード確認用",
       );
     case "address":
-      return validateOptionalMaxLengthText(
-        values.address,
-        INITIAL_REGISTRATION_FIELD_LIMITS.address,
-        "住所",
-      );
+      return validateOptionalAddressText(values.address);
     case "phoneNumber":
       return validateOptionalPhoneText(
         values.phoneNumber,
         INITIAL_REGISTRATION_FIELD_LIMITS.phoneNumber,
-        "電話番号",
       );
     case "bankName":
     case "bankCode":
@@ -142,27 +164,18 @@ export function validateInitialRegistrationInputValue(
     case "branchCode":
       return validateBranchNameValue(values);
     case "accountType":
-      return validateRequiredText(values.accountType, "預金種目");
+      return validateRequiredText(values.accountType);
     case "accountNumber":
       return (
-        validateRequiredText(values.accountNumber, "口座番号") ??
+        validateRequiredText(values.accountNumber) ??
         validateMaxLengthText(
           values.accountNumber,
           INITIAL_REGISTRATION_FIELD_LIMITS.accountNumber,
-          "口座番号",
         ) ??
-        validateHalfWidthNumericText(values.accountNumber, "口座番号")
+        validateHalfWidthNumericText(values.accountNumber)
       );
     case "accountHolder":
-      return (
-        validateRequiredText(values.accountHolder, "口座名義") ??
-        validateMaxLengthText(
-          values.accountHolder,
-          INITIAL_REGISTRATION_FIELD_LIMITS.accountHolder,
-          "口座名義",
-        ) ??
-        validateFullWidthText(values.accountHolder, "口座名義")
-      );
+      return validateAccountHolderText(values.accountHolder);
   }
 }
 
@@ -171,15 +184,18 @@ export function validateInitialRegistrationSubmitValues(
 ) {
   return INITIAL_REGISTRATION_FIELD_NAMES.reduce<InitialRegistrationFieldErrors>(
     (errors, fieldName) => {
-      const errorMessage = validateInitialRegistrationInputValue(
+      const errorCode = validateInitialRegistrationInputValue(
         fieldName,
         values,
       );
 
-      return errorMessage
+      return errorCode
         ? {
             ...errors,
-            [fieldName]: errorMessage,
+            [fieldName]: getInitialRegistrationValidationMessage(
+              fieldName,
+              errorCode,
+            ),
           }
         : errors;
     },

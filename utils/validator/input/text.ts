@@ -11,6 +11,13 @@ const halfWidthAlphanumericRegex = new RegExp(
 const halfWidthNumericRegex = new RegExp(INPUT_TEXT_PATTERNS.halfWidthNumeric);
 const fullWidthTextRegex = new RegExp(INPUT_TEXT_PATTERNS.fullWidthText, "u");
 
+export type TextValidationErrorCode =
+  | "required"
+  | "tooLong"
+  | "invalidHalfWidthAlphanumeric"
+  | "invalidHalfWidthNumeric"
+  | "invalidFullWidth";
+
 export function isHalfWidthAlphanumeric(value: string) {
   return halfWidthAlphanumericRegex.test(value);
 }
@@ -23,9 +30,9 @@ export function isFullWidthText(value: string) {
   return fullWidthTextRegex.test(value);
 }
 
-export function validateRequiredText(value: string, fieldName: string) {
+export function validateRequiredText(value: string): TextValidationErrorCode | null {
   if (!value.trim()) {
-    return `${fieldName}を入力してください。`;
+    return "required";
   }
 
   return null;
@@ -34,10 +41,9 @@ export function validateRequiredText(value: string, fieldName: string) {
 export function validateMaxLengthText(
   value: string,
   maxLength: number,
-  fieldName: string,
-) {
+): TextValidationErrorCode | null {
   if (value.trim().length > maxLength) {
-    return `${fieldName}は${maxLength}文字以内で入力してください。`;
+    return "tooLong";
   }
 
   return null;
@@ -46,37 +52,33 @@ export function validateMaxLengthText(
 export function validateOptionalMaxLengthText(
   value: string,
   maxLength: number,
-  fieldName: string,
-) {
+): TextValidationErrorCode | null {
   if (!value.trim()) {
     return null;
   }
 
-  return validateMaxLengthText(value, maxLength, fieldName);
+  return validateMaxLengthText(value, maxLength);
 }
 
-export function validateHalfWidthAlphanumericText(
-  value: string,
-  fieldName: string,
-) {
+export function validateHalfWidthAlphanumericText(value: string) {
   if (!isHalfWidthAlphanumeric(value.trim())) {
-    return `${fieldName}は半角英数字のみで入力してください。`;
+    return "invalidHalfWidthAlphanumeric";
   }
 
   return null;
 }
 
-export function validateHalfWidthNumericText(value: string, fieldName: string) {
+export function validateHalfWidthNumericText(value: string) {
   if (!isHalfWidthNumeric(value.trim())) {
-    return `${fieldName}は半角数字のみで入力してください。`;
+    return "invalidHalfWidthNumeric";
   }
 
   return null;
 }
 
-export function validateFullWidthText(value: string, fieldName: string) {
+export function validateFullWidthText(value: string) {
   if (!isFullWidthText(value.trim())) {
-    return `${fieldName}は全角で入力してください。`;
+    return "invalidFullWidth";
   }
 
   return null;

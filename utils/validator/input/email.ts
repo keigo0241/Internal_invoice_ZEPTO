@@ -8,9 +8,11 @@ export function isEmailLike(value: string) {
   return isEmail(normalizeEmail(value));
 }
 
-export function validateEmailText(value: string, fieldName: string) {
+export type EmailValidationErrorCode = "invalidEmail";
+
+export function validateEmailText(value: string): EmailValidationErrorCode | null {
   if (!isEmailLike(value)) {
-    return `${fieldName}を確認してください。`;
+    return "invalidEmail";
   }
 
   return null;

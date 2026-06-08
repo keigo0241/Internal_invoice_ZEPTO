@@ -4,48 +4,57 @@ import {
   validateRequiredText,
 } from "@/utils/validator/input/text";
 
+export type PasswordValidationErrorCode =
+  | "required"
+  | "tooShort"
+  | "tooLong"
+  | "invalidHalfWidthAlphanumeric"
+  | "passwordMismatch";
+
 type ValidatePasswordTextParams = {
   value: string;
-  fieldName: string;
   minLength: number;
   maxLength: number;
 };
 
 export function validatePasswordText({
   value,
-  fieldName,
   minLength,
   maxLength,
-}: ValidatePasswordTextParams) {
-  const requiredError = validateRequiredText(value, fieldName);
+}: ValidatePasswordTextParams): PasswordValidationErrorCode | null {
+  const requiredError = validateRequiredText(value);
 
   if (requiredError) {
-    return requiredError;
+    return "required";
   }
 
   if (value.trim().length < minLength) {
-    return `${fieldName}は${minLength}文字以上で入力してください。`;
+    return "tooShort";
   }
 
-  return (
-    validateMaxLengthText(value, maxLength, fieldName) ??
-    validateHalfWidthAlphanumericText(value, fieldName)
-  );
+  if (validateMaxLengthText(value, maxLength)) {
+    return "tooLong";
+  }
+
+  if (validateHalfWidthAlphanumericText(value)) {
+    return "invalidHalfWidthAlphanumeric";
+  }
+
+  return null;
 }
 
 export function validatePasswordConfirmationText(
   password: string,
   passwordConfirmation: string,
-  fieldName: string,
-) {
-  const requiredError = validateRequiredText(passwordConfirmation, fieldName);
+): PasswordValidationErrorCode | null {
+  const requiredError = validateRequiredText(passwordConfirmation);
 
   if (requiredError) {
-    return requiredError;
+    return "required";
   }
 
   if (password !== passwordConfirmation) {
-    return "パスワードと確認用パスワードが一致しません。";
+    return "passwordMismatch";
   }
 
   return null;
