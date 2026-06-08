@@ -30,9 +30,19 @@ export type LoginErrorCode =
 export const AUTH_COOKIE_NAMES = {
   googleOauthState: "google_oauth_state",
   googleVerifiedEmail: "google_verified_email",
+  googleRegistrationStatus: "google_registration_status",
+  cognitoIdToken: "cognito_id_token",
+  cognitoAccessToken: "cognito_access_token",
+  cognitoRefreshToken: "cognito_refresh_token",
 } as const;
 
 export const AUTH_COOKIE_MAX_AGE_SECONDS = {
   googleOauthState: 10 * 60,
   googleVerifiedEmail: 10 * 60,
+  googleRegistrationStatus: 10 * 60,
+} as const;
+
+export const GOOGLE_REGISTRATION_STATUS = {
+  registered: "registered",
+  unregistered: "unregistered",
 } as const;

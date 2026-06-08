@@ -11,6 +11,9 @@ vi.mock("@/features/auth/services/initial-registration", () => ({
 }));
 
 vi.mock("@/features/auth/services/session", () => ({
+  createGoogleRegistrationStatusCookieHeader: vi.fn(
+    () => "google_registration_status=registered; Path=/",
+  ),
   getGoogleVerifiedEmailFromRequest: vi.fn(),
 }));
 

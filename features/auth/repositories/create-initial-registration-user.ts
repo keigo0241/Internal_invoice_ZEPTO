@@ -9,7 +9,6 @@ type CreatedUserRow = {
 export async function createInitialRegistrationUser({
   name,
   email,
-  passwordHash,
   address,
   phoneNumber,
   bankName,
@@ -23,7 +22,6 @@ export async function createInitialRegistrationUser({
       insert into users (
         name,
         email,
-        password_hash,
         address,
         phone_number,
         role,
@@ -35,13 +33,12 @@ export async function createInitialRegistrationUser({
         status,
         amount_invoice
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active', '0')
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active', '0')
       returning id
     `,
     [
       name,
       email,
-      passwordHash,
       address,
       phoneNumber,
       UserRole.User,

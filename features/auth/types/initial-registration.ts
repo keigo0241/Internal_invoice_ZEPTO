@@ -16,7 +16,6 @@ export type InitialRegistrationForm = {
 export type CreateInitialRegistrationUserParams = {
   name: string;
   email: string;
-  passwordHash: string;
   address: string | null;
   phoneNumber: string | null;
   bankName: string;

@@ -4,6 +4,7 @@ import { type NextResponse } from "next/server";
 import {
   AUTH_COOKIE_MAX_AGE_SECONDS,
   AUTH_COOKIE_NAMES,
+  GOOGLE_REGISTRATION_STATUS,
 } from "@/constants/auth";
 import { getCookieValue } from "@/lib/http/cookies";
 import { getEnv } from "@/libs/server/env/get-env";
@@ -94,6 +95,45 @@ export function setGoogleVerifiedEmailCookie(
       secure: getEnv(AUTH_ENV_KEYS.nodeEnv) === "production",
     },
   );
+}
+
+export function setGoogleRegistrationStatusCookie(
+  response: NextResponse,
+  isRegistered: boolean,
+) {
+  response.cookies.set(
+    AUTH_COOKIE_NAMES.googleRegistrationStatus,
+    isRegistered
+      ? GOOGLE_REGISTRATION_STATUS.registered
+      : GOOGLE_REGISTRATION_STATUS.unregistered,
+    {
+      httpOnly: true,
+      maxAge: AUTH_COOKIE_MAX_AGE_SECONDS.googleRegistrationStatus,
+      path: "/",
+      sameSite: "lax",
+      secure: getEnv(AUTH_ENV_KEYS.nodeEnv) === "production",
+    },
+  );
+}
+
+export function createGoogleRegistrationStatusCookieHeader(isRegistered: boolean) {
+  const cookieParts = [
+    `${AUTH_COOKIE_NAMES.googleRegistrationStatus}=${
+      isRegistered
+        ? GOOGLE_REGISTRATION_STATUS.registered
+        : GOOGLE_REGISTRATION_STATUS.unregistered
+    }`,
+    "Path=/",
+    `Max-Age=${AUTH_COOKIE_MAX_AGE_SECONDS.googleRegistrationStatus}`,
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+
+  if (getEnv(AUTH_ENV_KEYS.nodeEnv) === "production") {
+    cookieParts.push("Secure");
+  }
+
+  return cookieParts.join("; ");
 }
 
 export async function getCurrentGoogleVerifiedEmail() {

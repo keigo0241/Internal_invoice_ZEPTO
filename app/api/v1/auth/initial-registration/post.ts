@@ -1,5 +1,6 @@
 import { parseInitialRegistrationForm } from "@/features/auth/schemas/initial-registration-schema";
 import { registerInitialUser } from "@/features/auth/services/initial-registration";
+import { createGoogleRegistrationStatusCookieHeader } from "@/features/auth/services/session";
 import { type AuthenticatedApiHandler } from "@/lib/api/with-auth";
 
 export const handlePost: AuthenticatedApiHandler = async (ctx) => {
@@ -11,6 +12,9 @@ export const handlePost: AuthenticatedApiHandler = async (ctx) => {
 
   return {
     status: 201,
+    headers: {
+      "Set-Cookie": createGoogleRegistrationStatusCookieHeader(true),
+    },
     body: {
       data: result,
     },

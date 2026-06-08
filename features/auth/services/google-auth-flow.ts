@@ -1,10 +1,26 @@
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 import { existsUserByEmail } from "@/features/auth/repositories/exists-user-by-email";
 
-export async function getGoogleAuthNextPath(email: string) {
+export type GoogleAuthNextStep = {
+  isRegistered: boolean;
+  nextPath: string;
+};
+
+export async function getGoogleAuthNextStep(
+  email: string,
+): Promise<GoogleAuthNextStep> {
   const isRegistered = await existsUserByEmail(email);
 
-  return isRegistered
-    ? GOOGLE_AUTH_CONFIG.appLoginPath
-    : GOOGLE_AUTH_CONFIG.initialRegistrationPath;
+  return {
+    isRegistered,
+    nextPath: isRegistered
+      ? GOOGLE_AUTH_CONFIG.appLoginPath
+      : GOOGLE_AUTH_CONFIG.initialRegistrationPath,
+  };
+}
+
+export async function getGoogleAuthNextPath(email: string) {
+  const nextStep = await getGoogleAuthNextStep(email);
+
+  return nextStep.nextPath;
 }

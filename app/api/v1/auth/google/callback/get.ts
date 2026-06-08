@@ -6,12 +6,15 @@ import {
   type LoginErrorCode,
 } from "@/constants/auth";
 import { getGoogleLoginErrorCode } from "@/features/auth/services/google-auth-policy";
-import { getGoogleAuthNextPath } from "@/features/auth/services/google-auth-flow";
+import { getGoogleAuthNextStep } from "@/features/auth/services/google-auth-flow";
 import {
   exchangeGoogleCodeForIdToken,
   verifyGoogleIdToken,
 } from "@/features/auth/services/google-oauth";
-import { setGoogleVerifiedEmailCookie } from "@/features/auth/services/session";
+import {
+  setGoogleRegistrationStatusCookie,
+  setGoogleVerifiedEmailCookie,
+} from "@/features/auth/services/session";
 import { type ApiHandler } from "@/lib/api/types";
 import { getCookieValue } from "@/lib/http/cookies";
 import { logger } from "@/lib/logger/logger";
@@ -89,10 +92,10 @@ export const handleGet: ApiHandler = async (ctx) => {
     return createLoginRedirect(ctx.request, domainErrorCode);
   }
 
-  let nextPath: string;
+  let nextStep: Awaited<ReturnType<typeof getGoogleAuthNextStep>>;
 
   try {
-    nextPath = await getGoogleAuthNextPath(normalizedGoogleEmail);
+    nextStep = await getGoogleAuthNextStep(normalizedGoogleEmail);
   } catch (error) {
     logger.error({
       message: "Google OAuth user registration lookup failed.",
@@ -106,8 +109,9 @@ export const handleGet: ApiHandler = async (ctx) => {
     return createLoginRedirect(ctx.request, LOGIN_ERROR_CODE.dbConnectionFailed);
   }
 
-  const response = createSuccessRedirect(ctx.request, nextPath);
+  const response = createSuccessRedirect(ctx.request, nextStep.nextPath);
   setGoogleVerifiedEmailCookie(response, normalizedGoogleEmail);
+  setGoogleRegistrationStatusCookie(response, nextStep.isRegistered);
 
   return response;
 };
