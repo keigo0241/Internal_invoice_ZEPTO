@@ -5,8 +5,10 @@ import {
   AUTH_COOKIE_MAX_AGE_SECONDS,
   AUTH_COOKIE_NAMES,
 } from "@/constants/auth";
+import { getCookieValue } from "@/lib/http/cookies";
 import { getEnv } from "@/libs/server/env/get-env";
 import { getRequiredEnv } from "@/libs/server/env/get-required-env";
+import { normalizeEmail } from "@/utils/validator/input/email";
 
 const AUTH_ENV_KEYS = {
   sessionSecret: "AUTH_SESSION_SECRET",
@@ -74,12 +76,12 @@ function isGoogleVerifiedEmailPayload(
 
 export function setGoogleVerifiedEmailCookie(
   response: NextResponse,
-  email: string,
+  normalizedEmail: string,
 ) {
   response.cookies.set(
     AUTH_COOKIE_NAMES.googleVerifiedEmail,
     createSignedToken({
-      email,
+      email: normalizedEmail,
       exp:
         Math.floor(Date.now() / 1000) +
         AUTH_COOKIE_MAX_AGE_SECONDS.googleVerifiedEmail,
@@ -107,12 +109,35 @@ export async function getCurrentGoogleVerifiedEmail() {
 
     if (
       !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp < Math.floor(Date.now() / 1000)
+      payload.exp <= Math.floor(Date.now() / 1000)
     ) {
       return null;
     }
 
-    return payload.email;
+    return normalizeEmail(payload.email);
+  } catch {
+    return null;
+  }
+}
+
+export function getGoogleVerifiedEmailFromRequest(request: Request) {
+  const token = getCookieValue(request, AUTH_COOKIE_NAMES.googleVerifiedEmail);
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = verifySignedToken(token);
+
+    if (
+      !isGoogleVerifiedEmailPayload(payload) ||
+      payload.exp <= Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+
+    return normalizeEmail(payload.email);
   } catch {
     return null;
   }

@@ -1,5 +1,5 @@
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
-import { existsUserByEmail } from "@/features/auth/repositories/user-repository";
+import { existsUserByEmail } from "@/features/auth/repositories/exists-user-by-email";
 
 export async function getGoogleAuthNextPath(email: string) {
   const isRegistered = await existsUserByEmail(email);

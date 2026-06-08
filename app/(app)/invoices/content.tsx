@@ -2,21 +2,31 @@ import Link from "next/link";
 import { jp } from "@/assets/translations/jp";
 import {
   INVOICE_STATUS_LABELS,
-  type InvoiceStatus,
+  InvoiceStatus,
 } from "@/features/invoices/types/invoice-status";
 
 type InvoicesContentProps = {
   invoiceStatus: InvoiceStatus | null;
 };
 
-const invoiceFilterLinks: {
-  href: string;
+type InvoiceFilterLink = {
   label: string;
-}[] = [
-  { href: "/invoices", label: jp.invoices.filters.all },
-  { href: "/invoices?status=draft", label: jp.invoices.filters.draft },
-  { href: "/invoices?status=returned", label: jp.invoices.filters.returned },
+  status: InvoiceStatus | null;
+};
+
+const invoiceFilterLinks: InvoiceFilterLink[] = [
+  { label: jp.invoices.filters.all, status: null },
+  { label: jp.invoices.filters.draft, status: InvoiceStatus.Draft },
+  { label: jp.invoices.filters.returned, status: InvoiceStatus.Returned },
 ];
+
+function getInvoiceFilterHref(status: InvoiceStatus | null) {
+  if (!status) return "/invoices";
+
+  const searchParams = new URLSearchParams({ status });
+
+  return `/invoices?${searchParams.toString()}`;
+}
 
 function getFilterMessage(status: InvoiceStatus | null) {
   if (!status) return jp.invoices.allFilterMessage;
@@ -40,8 +50,8 @@ export function InvoicesContent({ invoiceStatus }: InvoicesContentProps) {
         <div className="flex items-center gap-2 text-sm">
           {invoiceFilterLinks.map((link) => (
             <Link
-              key={link.href}
-              href={link.href}
+              key={link.status ?? "all"}
+              href={getInvoiceFilterHref(link.status)}
               className="rounded-md border border-slate-300 px-3 py-2 text-slate-700 transition hover:bg-slate-100"
             >
               {link.label}

@@ -20,9 +20,17 @@ export const jp = {
   },
   appLogin: {
     title: "アプリ内ログイン",
-    googleVerifiedEmailLabel: "Google認証済みメールアドレス",
-    nextImplementationNote:
-      "次の実装で、初回利用判定とアプリ内ログインを接続します。",
+    description: "登録済みのメールアドレスとパスワードを入力してください。",
+    labels: {
+      email: "メールアドレス",
+      password: "パスワード",
+    },
+    placeholders: {
+      email: "example@zpt-ai.com",
+      password: "半角英数字で入力",
+    },
+    loginButton: "ログイン",
+    passwordResetLink: "パスワードをお忘れの場合",
   },
   initialRegistration: {
     title: "初回登録",
@@ -33,7 +41,8 @@ export const jp = {
       email: "メールアドレス",
       password: "パスワード",
       passwordConfirmation: "パスワード確認用",
-      companyName: "会社名",
+      address: "住所",
+      phoneNumber: "電話番号",
       bankName: "銀行名",
       accountType: "預金種目",
       branchName: "店名",
@@ -44,18 +53,24 @@ export const jp = {
       name: "辻井 啓悟",
       password: "8文字以上で入力",
       passwordConfirmation: "もう一度入力",
+      address: "東京都〇〇区〇〇",
+      phoneNumber: "09012345678",
       bankName: "〇〇銀行",
       branchName: "〇〇支店",
       accountNumber: "1234567",
       accountHolder: "ツジイ ケイゴ",
     },
+    requiredBadge: "必須",
+    optionalBadge: "任意",
     accountTypeOptions: {
       ordinary: "普通預金",
       checking: "当座預金",
       savings: "貯蓄預金",
     },
-    companyName: "株式会社Zepto AI",
     submitButton: "ユーザー情報登録",
+    submittingButton: "登録中",
+    registrationError:
+      "ユーザー情報を登録できませんでした。入力内容を確認してください。",
   },
   invoices: {
     title: "請求書一覧",

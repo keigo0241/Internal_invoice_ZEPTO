@@ -3,6 +3,7 @@ import {
   LOGIN_ERROR_CODE,
   type LoginErrorCode,
 } from "@/constants/auth";
+import { normalizeEmail } from "@/utils/validator/input/email";
 
 function normalizeDomain(domain: string) {
   return domain.trim().toLowerCase();
@@ -11,10 +12,7 @@ function normalizeDomain(domain: string) {
 export function isAllowedGoogleEmailDomain(email: string) {
   const allowedDomain = normalizeDomain(GOOGLE_AUTH_CONFIG.allowedDomain);
 
-  return email
-    .trim()
-    .toLowerCase()
-    .endsWith(`@${allowedDomain}`);
+  return normalizeEmail(email).endsWith(`@${allowedDomain}`);
 }
 
 export function getGoogleLoginErrorCode(email: string): LoginErrorCode | null {

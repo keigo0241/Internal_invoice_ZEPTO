@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/api/errors";
 import { logger } from "@/lib/logger/logger";
 
 type HandleApiErrorParams = {
@@ -11,6 +12,34 @@ export function handleApiError({
   request,
   traceId,
 }: HandleApiErrorParams): Response {
+  if (error instanceof AppError) {
+    logger.warn({
+      message: "API request failed with expected error.",
+      context: {
+        method: request.method,
+        path: new URL(request.url).pathname,
+        traceId,
+        code: error.code,
+      },
+      error,
+    });
+
+    return Response.json(
+      {
+        code: error.code,
+        message: error.message,
+        traceId,
+      },
+      {
+        status: error.statusCode,
+        headers: {
+          "Content-Type": "application/problem+json",
+          "x-Trace-Id": traceId,
+        },
+      },
+    );
+  }
+
   logger.error({
     message: "API request failed.",
     context: {
