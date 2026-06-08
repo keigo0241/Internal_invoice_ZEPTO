@@ -2,31 +2,29 @@ import isMobilePhone from "validator/lib/isMobilePhone";
 import isNumeric from "validator/lib/isNumeric";
 import { validateMaxLengthText } from "@/utils/validator/input/text";
 
+export type PhoneValidationErrorCode = "tooLong" | "invalidPhoneNumber";
+
 export function validateOptionalPhoneText(
   value: string,
   maxLength: number,
-) {
+): PhoneValidationErrorCode | null {
   const normalizedValue = value.trim();
 
   if (!normalizedValue) {
     return null;
   }
 
-  const maxLengthError = validateMaxLengthText(
-    normalizedValue,
-    maxLength,
-    "電話番号",
-  );
+  const maxLengthError = validateMaxLengthText(normalizedValue, maxLength);
 
   if (maxLengthError) {
-    return maxLengthError;
+    return "tooLong";
   }
 
   if (
     !isNumeric(normalizedValue) &&
     !isMobilePhone(normalizedValue, "ja-JP")
   ) {
-    return "電話番号を確認してください。";
+    return "invalidPhoneNumber";
   }
 
   return null;

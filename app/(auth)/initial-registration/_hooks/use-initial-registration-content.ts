@@ -115,14 +115,18 @@ async function fetchBranchOptions(
 }
 
 function findSelectedBank(bankOptions: BankOption[], bankName: string) {
-  return bankOptions.find((bank) => bank.name === bankName.trim());
+  const normalizedBankName = bankName.trim();
+
+  return bankOptions.find((bank) => bank.name === normalizedBankName);
 }
 
 function findSelectedBranch(
   branchOptions: BankBranchOption[],
   branchName: string,
 ) {
-  return branchOptions.find((branch) => branch.name === branchName.trim());
+  const normalizedBranchName = branchName.trim();
+
+  return branchOptions.find((branch) => branch.name === normalizedBranchName);
 }
 
 export function useInitialRegistrationContent({
@@ -158,8 +162,9 @@ export function useInitialRegistrationContent({
 
   useEffect(() => {
     const controller = new AbortController();
+    const normalizedBankName = bankName.trim();
 
-    if (!bankName.trim()) {
+    if (!normalizedBankName) {
       return () => controller.abort();
     }
 
@@ -202,13 +207,14 @@ export function useInitialRegistrationContent({
 
   function handleBankNameChange(event: ChangeEvent<HTMLInputElement>) {
     const nextBankName = event.target.value;
+    const normalizedNextBankName = nextBankName.trim();
 
     setBankName(nextBankName);
     setBranchName("");
     setBranchOptions([]);
     setSelectedBranchCode("");
 
-    if (!nextBankName.trim()) {
+    if (!normalizedNextBankName) {
       setBankOptions([]);
       setSelectedBankCode("");
     }
