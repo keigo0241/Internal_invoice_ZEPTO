@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import {
-  AUTH_COOKIE_NAMES,
-} from "@/constants/auth";
+import { AUTH_COOKIE_NAMES } from "@/constants/auth";
+import { hasValidGoogleVerifiedEmailToken } from "@/features/auth/services/session";
 import {
   getAuthRedirectPath,
   hasCognitoLoginToken,
@@ -9,15 +8,17 @@ import {
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const hasGoogleVerifiedEmail = request.cookies.has(
+  const googleVerifiedEmailToken = request.cookies.get(
     AUTH_COOKIE_NAMES.googleVerifiedEmail,
-  );
+  )?.value;
   const googleRegistrationStatus = request.cookies.get(
     AUTH_COOKIE_NAMES.googleRegistrationStatus,
   )?.value;
   const redirectPath = getAuthRedirectPath({
     pathname,
-    hasGoogleVerifiedEmail,
+    hasGoogleVerifiedEmail: hasValidGoogleVerifiedEmailToken(
+      googleVerifiedEmailToken,
+    ),
     googleRegistrationStatus,
     hasCognitoIdToken: hasCognitoLoginToken(request.cookies),
   });

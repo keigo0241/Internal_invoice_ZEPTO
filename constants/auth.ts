@@ -40,6 +40,9 @@ export const AUTH_COOKIE_MAX_AGE_SECONDS = {
   googleOauthState: 10 * 60,
   googleVerifiedEmail: 10 * 60,
   googleRegistrationStatus: 10 * 60,
+  cognitoIdToken: 60 * 60,
+  cognitoAccessToken: 60 * 60,
+  cognitoRefreshToken: 24 * 60 * 60,
 } as const;
 
 export const GOOGLE_REGISTRATION_STATUS = {

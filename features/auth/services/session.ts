@@ -75,6 +75,27 @@ function isGoogleVerifiedEmailPayload(
   return typeof payload.email === "string" && typeof payload.exp === "number";
 }
 
+function getGoogleVerifiedEmailFromToken(token: string | undefined) {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = verifySignedToken(token);
+
+    if (
+      !isGoogleVerifiedEmailPayload(payload) ||
+      payload.exp <= Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+
+    return normalizeEmail(payload.email);
+  } catch {
+    return null;
+  }
+}
+
 export function setGoogleVerifiedEmailCookie(
   response: NextResponse,
   normalizedEmail: string,
@@ -140,45 +161,15 @@ export async function getCurrentGoogleVerifiedEmail() {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAMES.googleVerifiedEmail)?.value;
 
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const payload = verifySignedToken(token);
-
-    if (
-      !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp <= Math.floor(Date.now() / 1000)
-    ) {
-      return null;
-    }
-
-    return normalizeEmail(payload.email);
-  } catch {
-    return null;
-  }
+  return getGoogleVerifiedEmailFromToken(token);
 }
 
 export function getGoogleVerifiedEmailFromRequest(request: Request) {
   const token = getCookieValue(request, AUTH_COOKIE_NAMES.googleVerifiedEmail);
 
-  if (!token) {
-    return null;
-  }
+  return getGoogleVerifiedEmailFromToken(token);
+}
 
-  try {
-    const payload = verifySignedToken(token);
-
-    if (
-      !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp <= Math.floor(Date.now() / 1000)
-    ) {
-      return null;
-    }
-
-    return normalizeEmail(payload.email);
-  } catch {
-    return null;
-  }
+export function hasValidGoogleVerifiedEmailToken(token: string | undefined) {
+  return Boolean(getGoogleVerifiedEmailFromToken(token));
 }
