@@ -18,9 +18,3 @@ export async function getGoogleAuthNextStep(
       : GOOGLE_AUTH_CONFIG.initialRegistrationPath,
   };
 }
-
-export async function getGoogleAuthNextPath(email: string) {
-  const nextStep = await getGoogleAuthNextStep(email);
-
-  return nextStep.nextPath;
-}

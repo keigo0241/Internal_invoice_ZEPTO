@@ -17,13 +17,17 @@ type RegisterCognitoUserParams = {
   password: string;
 };
 
-function isCognitoError(error: unknown, name: string) {
-  return (
+function getCognitoErrorName(error: unknown) {
+  if (
     typeof error === "object" &&
     error !== null &&
     "name" in error &&
-    error.name === name
-  );
+    typeof error.name === "string"
+  ) {
+    return error.name;
+  }
+
+  return null;
 }
 
 export async function deleteCognitoUser(username: string) {
@@ -53,15 +57,16 @@ async function cleanupCognitoUser(username: string) {
 }
 
 function handleRegisterCognitoUserError(error: unknown): never {
-  if (isCognitoError(error, "UsernameExistsException")) {
-    throw new ConflictError("このメールアドレスはすでに登録されています。");
-  }
+  const errorName = getCognitoErrorName(error);
 
-  if (isCognitoError(error, "InvalidPasswordException")) {
-    throw new BadRequestError("パスワードの条件を確認してください。");
+  switch (errorName) {
+    case "UsernameExistsException":
+      throw new ConflictError("このメールアドレスはすでに登録されています。");
+    case "InvalidPasswordException":
+      throw new BadRequestError("パスワードの条件を確認してください。");
+    default:
+      throw new InternalServerError("Cognitoユーザーを作成できませんでした。");
   }
-
-  throw new InternalServerError("Cognitoユーザーを作成できませんでした。");
 }
 
 export async function registerCognitoUser({
