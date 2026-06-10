@@ -4,6 +4,7 @@ import { type NextResponse } from "next/server";
 import {
   AUTH_COOKIE_MAX_AGE_SECONDS,
   AUTH_COOKIE_NAMES,
+  GOOGLE_REGISTRATION_STATUS,
 } from "@/constants/auth";
 import { getCookieValue } from "@/lib/http/cookies";
 import { getEnv } from "@/libs/server/env/get-env";
@@ -17,6 +18,14 @@ const AUTH_ENV_KEYS = {
 
 type GoogleVerifiedEmailPayload = {
   email: string;
+  exp: number;
+};
+
+type GoogleAuthSession = {
+  googleVerifiedEmail: string;
+};
+
+type CognitoTokenPayload = {
   exp: number;
 };
 
@@ -74,10 +83,85 @@ function isGoogleVerifiedEmailPayload(
   return typeof payload.email === "string" && typeof payload.exp === "number";
 }
 
-export function setGoogleVerifiedEmailCookie(
-  response: NextResponse,
-  normalizedEmail: string,
-) {
+function isCognitoTokenPayload(value: unknown): value is CognitoTokenPayload {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const payload = value as Partial<CognitoTokenPayload>;
+
+  return typeof payload.exp === "number";
+}
+
+function decodeJwtPayload(token: string) {
+  const [, encodedPayload] = token.split(".");
+
+  if (!encodedPayload) {
+    return null;
+  }
+
+  return JSON.parse(decodeBase64Url(encodedPayload)) as unknown;
+}
+
+function getGoogleVerifiedEmailFromToken(token: string | undefined) {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const payload = verifySignedToken(token);
+
+    if (
+      !isGoogleVerifiedEmailPayload(payload) ||
+      payload.exp <= Math.floor(Date.now() / 1000)
+    ) {
+      return null;
+    }
+
+    return normalizeEmail(payload.email);
+  } catch {
+    return null;
+  }
+}
+
+function isValidCognitoToken(token: string | undefined) {
+  if (!token) {
+    return false;
+  }
+
+  try {
+    const payload = decodeJwtPayload(token);
+
+    return (
+      isCognitoTokenPayload(payload) &&
+      payload.exp > Math.floor(Date.now() / 1000)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isProductionEnvironment() {
+  return getEnv(AUTH_ENV_KEYS.nodeEnv) === "production";
+}
+
+function getAuthCookieOptions(maxAge: number) {
+  return {
+    httpOnly: true,
+    maxAge,
+    path: "/",
+    sameSite: "lax" as const,
+    secure: isProductionEnvironment(),
+  };
+}
+
+function getGoogleRegistrationStatusValue(isRegistered: boolean) {
+  return isRegistered
+    ? GOOGLE_REGISTRATION_STATUS.registered
+    : GOOGLE_REGISTRATION_STATUS.unregistered;
+}
+
+function setGoogleVerifiedEmailCookie(response: NextResponse, normalizedEmail: string) {
   response.cookies.set(
     AUTH_COOKIE_NAMES.googleVerifiedEmail,
     createSignedToken({
@@ -86,59 +170,71 @@ export function setGoogleVerifiedEmailCookie(
         Math.floor(Date.now() / 1000) +
         AUTH_COOKIE_MAX_AGE_SECONDS.googleVerifiedEmail,
     }),
-    {
-      httpOnly: true,
-      maxAge: AUTH_COOKIE_MAX_AGE_SECONDS.googleVerifiedEmail,
-      path: "/",
-      sameSite: "lax",
-      secure: getEnv(AUTH_ENV_KEYS.nodeEnv) === "production",
-    },
+    getAuthCookieOptions(AUTH_COOKIE_MAX_AGE_SECONDS.googleVerifiedEmail),
   );
 }
 
-export async function getCurrentGoogleVerifiedEmail() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(AUTH_COOKIE_NAMES.googleVerifiedEmail)?.value;
-
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const payload = verifySignedToken(token);
-
-    if (
-      !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp <= Math.floor(Date.now() / 1000)
-    ) {
-      return null;
-    }
-
-    return normalizeEmail(payload.email);
-  } catch {
-    return null;
-  }
+function setGoogleRegistrationStatusCookie(
+  response: NextResponse,
+  isRegistered: boolean,
+) {
+  response.cookies.set(
+    AUTH_COOKIE_NAMES.googleRegistrationStatus,
+    getGoogleRegistrationStatusValue(isRegistered),
+    getAuthCookieOptions(AUTH_COOKIE_MAX_AGE_SECONDS.googleRegistrationStatus),
+  );
 }
 
-export function getGoogleVerifiedEmailFromRequest(request: Request) {
+export function setGoogleAuthSessionCookies({
+  response,
+  normalizedEmail,
+  isRegistered,
+}: {
+  response: NextResponse;
+  normalizedEmail: string;
+  isRegistered: boolean;
+}) {
+  setGoogleVerifiedEmailCookie(response, normalizedEmail);
+  setGoogleRegistrationStatusCookie(response, isRegistered);
+}
+
+export function createGoogleRegistrationCompletedCookieHeader() {
+  const cookieParts = [
+    `${AUTH_COOKIE_NAMES.googleRegistrationStatus}=${GOOGLE_REGISTRATION_STATUS.registered}`,
+    "Path=/",
+    `Max-Age=${AUTH_COOKIE_MAX_AGE_SECONDS.googleRegistrationStatus}`,
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+
+  if (isProductionEnvironment()) {
+    cookieParts.push("Secure");
+  }
+
+  return cookieParts.join("; ");
+}
+
+export async function getCurrentGoogleAuthSession(): Promise<GoogleAuthSession | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(AUTH_COOKIE_NAMES.googleVerifiedEmail)?.value;
+  const googleVerifiedEmail = getGoogleVerifiedEmailFromToken(token);
+
+  return googleVerifiedEmail ? { googleVerifiedEmail } : null;
+}
+
+export function getGoogleAuthSessionFromRequest(
+  request: Request,
+): GoogleAuthSession | null {
   const token = getCookieValue(request, AUTH_COOKIE_NAMES.googleVerifiedEmail);
+  const googleVerifiedEmail = getGoogleVerifiedEmailFromToken(token);
 
-  if (!token) {
-    return null;
-  }
+  return googleVerifiedEmail ? { googleVerifiedEmail } : null;
+}
 
-  try {
-    const payload = verifySignedToken(token);
+export function hasValidGoogleAuthSessionToken(token: string | undefined) {
+  return Boolean(getGoogleVerifiedEmailFromToken(token));
+}
 
-    if (
-      !isGoogleVerifiedEmailPayload(payload) ||
-      payload.exp <= Math.floor(Date.now() / 1000)
-    ) {
-      return null;
-    }
-
-    return normalizeEmail(payload.email);
-  } catch {
-    return null;
-  }
+export function hasValidCognitoAuthSessionToken(token: string | undefined) {
+  return isValidCognitoToken(token);
 }

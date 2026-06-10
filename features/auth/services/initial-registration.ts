@@ -2,13 +2,31 @@ import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 import { createInitialRegistrationUser } from "@/features/auth/repositories/create-initial-registration-user";
 import { existsUserByEmail } from "@/features/auth/repositories/exists-user-by-email";
 import { type InitialRegistrationForm } from "@/features/auth/types/initial-registration";
-import { hashPassword } from "@/features/auth/services/password";
+import {
+  deleteCognitoUser,
+  registerCognitoUser,
+} from "@/features/auth/services/cognito-user";
 import { ConflictError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger/logger";
 
 type RegisterInitialUserParams = {
   googleVerifiedEmail: string;
   form: InitialRegistrationForm;
 };
+
+async function cleanupCognitoUserAfterDatabaseFailure(email: string) {
+  try {
+    await deleteCognitoUser(email);
+  } catch (error) {
+    logger.error({
+      message: "Failed to cleanup Cognito user after database registration failure.",
+      context: {
+        email,
+      },
+      error,
+    });
+  }
+}
 
 export async function registerInitialUser({
   googleVerifiedEmail,
@@ -20,20 +38,28 @@ export async function registerInitialUser({
     throw new ConflictError("このメールアドレスはすでに登録されています。");
   }
 
-  const passwordHash = await hashPassword(form.password);
-
-  await createInitialRegistrationUser({
-    name: form.name,
+  await registerCognitoUser({
     email: googleVerifiedEmail,
-    passwordHash,
-    address: form.address,
-    phoneNumber: form.phoneNumber,
-    bankName: form.bankName,
-    accountType: form.accountType,
-    branchName: form.branchName,
-    accountNumber: form.accountNumber,
-    accountHolder: form.accountHolder,
+    password: form.password,
   });
+
+  try {
+    await createInitialRegistrationUser({
+      name: form.name,
+      email: googleVerifiedEmail,
+      address: form.address,
+      phoneNumber: form.phoneNumber,
+      bankName: form.bankName,
+      accountType: form.accountType,
+      branchName: form.branchName,
+      accountNumber: form.accountNumber,
+      accountHolder: form.accountHolder,
+    });
+  } catch (error) {
+    await cleanupCognitoUserAfterDatabaseFailure(googleVerifiedEmail);
+
+    throw error;
+  }
 
   return {
     redirectPath: GOOGLE_AUTH_CONFIG.appLoginPath,

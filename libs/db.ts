@@ -73,7 +73,3 @@ export const db: DbConnection = {
     return getRdsPool().query<T>(sql, params);
   },
 };
-
-export async function checkDbConnection() {
-  await db.query("select 1");
-}
