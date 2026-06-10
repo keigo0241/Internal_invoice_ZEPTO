@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 import { registerInitialUser } from "@/features/auth/services/initial-registration";
-import { getGoogleVerifiedEmailFromRequest } from "@/features/auth/services/session";
+import { getGoogleAuthSessionFromRequest } from "@/features/auth/services/session";
 import { BankAccountType } from "@/features/users/types/bank-account";
 import { ConflictError } from "@/lib/api/errors";
 import { POST } from "@/app/api/v1/auth/initial-registration/route";
@@ -11,10 +11,10 @@ vi.mock("@/features/auth/services/initial-registration", () => ({
 }));
 
 vi.mock("@/features/auth/services/session", () => ({
-  createGoogleRegistrationStatusCookieHeader: vi.fn(
+  createGoogleRegistrationCompletedCookieHeader: vi.fn(
     () => "google_registration_status=registered; Path=/",
   ),
-  getGoogleVerifiedEmailFromRequest: vi.fn(),
+  getGoogleAuthSessionFromRequest: vi.fn(),
 }));
 
 vi.mock("@/lib/logger/logger", () => ({
@@ -26,8 +26,8 @@ vi.mock("@/lib/logger/logger", () => ({
 }));
 
 const mockedRegisterInitialUser = vi.mocked(registerInitialUser);
-const mockedGetGoogleVerifiedEmailFromRequest = vi.mocked(
-  getGoogleVerifiedEmailFromRequest,
+const mockedGetGoogleAuthSessionFromRequest = vi.mocked(
+  getGoogleAuthSessionFromRequest,
 );
 
 const validBody = {
@@ -67,11 +67,13 @@ function createInitialRegistrationRequest({
 describe("POST /api/v1/auth/initial-registration", () => {
   beforeEach(() => {
     mockedRegisterInitialUser.mockReset();
-    mockedGetGoogleVerifiedEmailFromRequest.mockReset();
+    mockedGetGoogleAuthSessionFromRequest.mockReset();
   });
 
   it("returns 201 and app login path when initial registration succeeds", async () => {
-    mockedGetGoogleVerifiedEmailFromRequest.mockReturnValue("k.tsujii@zpt-ai.com");
+    mockedGetGoogleAuthSessionFromRequest.mockReturnValue({
+      googleVerifiedEmail: "k.tsujii@zpt-ai.com",
+    });
     mockedRegisterInitialUser.mockResolvedValue({
       redirectPath: GOOGLE_AUTH_CONFIG.appLoginPath,
     });
@@ -108,7 +110,7 @@ describe("POST /api/v1/auth/initial-registration", () => {
   });
 
   it("returns 401 when Google verified email is missing", async () => {
-    mockedGetGoogleVerifiedEmailFromRequest.mockReturnValue(null);
+    mockedGetGoogleAuthSessionFromRequest.mockReturnValue(null);
 
     const response = await POST(createInitialRegistrationRequest());
     const body = await response.json();
@@ -119,7 +121,9 @@ describe("POST /api/v1/auth/initial-registration", () => {
   });
 
   it("returns 400 when content type is not JSON", async () => {
-    mockedGetGoogleVerifiedEmailFromRequest.mockReturnValue("k.tsujii@zpt-ai.com");
+    mockedGetGoogleAuthSessionFromRequest.mockReturnValue({
+      googleVerifiedEmail: "k.tsujii@zpt-ai.com",
+    });
 
     const response = await POST(
       createInitialRegistrationRequest({
@@ -135,7 +139,9 @@ describe("POST /api/v1/auth/initial-registration", () => {
   });
 
   it("returns 400 when password confirmation does not match", async () => {
-    mockedGetGoogleVerifiedEmailFromRequest.mockReturnValue("k.tsujii@zpt-ai.com");
+    mockedGetGoogleAuthSessionFromRequest.mockReturnValue({
+      googleVerifiedEmail: "k.tsujii@zpt-ai.com",
+    });
 
     const response = await POST(
       createInitialRegistrationRequest({
@@ -153,7 +159,9 @@ describe("POST /api/v1/auth/initial-registration", () => {
   });
 
   it("returns 409 when the user is already registered", async () => {
-    mockedGetGoogleVerifiedEmailFromRequest.mockReturnValue("k.tsujii@zpt-ai.com");
+    mockedGetGoogleAuthSessionFromRequest.mockReturnValue({
+      googleVerifiedEmail: "k.tsujii@zpt-ai.com",
+    });
     mockedRegisterInitialUser.mockRejectedValue(
       new ConflictError("このメールアドレスはすでに登録されています。"),
     );

@@ -1,14 +1,16 @@
 import { redirect } from "next/navigation";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
-import { getCurrentGoogleVerifiedEmail } from "@/features/auth/services/session";
+import { getCurrentGoogleAuthSession } from "@/features/auth/services/session";
 import { AppLoginContent } from "./content";
 
 export default async function AppLoginPage() {
-  const googleVerifiedEmail = await getCurrentGoogleVerifiedEmail();
+  const googleAuthSession = await getCurrentGoogleAuthSession();
 
-  if (!googleVerifiedEmail) {
+  if (!googleAuthSession) {
     redirect(GOOGLE_AUTH_CONFIG.loginPath);
   }
 
-  return <AppLoginContent googleVerifiedEmail={googleVerifiedEmail} />;
+  return (
+    <AppLoginContent googleVerifiedEmail={googleAuthSession.googleVerifiedEmail} />
+  );
 }

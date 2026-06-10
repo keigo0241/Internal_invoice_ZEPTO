@@ -12,8 +12,7 @@ import {
   verifyGoogleIdToken,
 } from "@/features/auth/services/google-oauth";
 import {
-  setGoogleRegistrationStatusCookie,
-  setGoogleVerifiedEmailCookie,
+  setGoogleAuthSessionCookies,
 } from "@/features/auth/services/session";
 import { type ApiHandler } from "@/lib/api/types";
 import { getCookieValue } from "@/lib/http/cookies";
@@ -110,8 +109,11 @@ export const handleGet: ApiHandler = async (ctx) => {
   }
 
   const response = createSuccessRedirect(ctx.request, nextStep.nextPath);
-  setGoogleVerifiedEmailCookie(response, normalizedGoogleEmail);
-  setGoogleRegistrationStatusCookie(response, nextStep.isRegistered);
+  setGoogleAuthSessionCookies({
+    response,
+    normalizedEmail: normalizedGoogleEmail,
+    isRegistered: nextStep.isRegistered,
+  });
 
   return response;
 };

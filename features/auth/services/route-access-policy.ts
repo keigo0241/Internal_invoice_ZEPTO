@@ -1,8 +1,4 @@
-import {
-  AUTH_COOKIE_NAMES,
-  GOOGLE_AUTH_CONFIG,
-  GOOGLE_REGISTRATION_STATUS,
-} from "@/constants/auth";
+import { GOOGLE_AUTH_CONFIG, GOOGLE_REGISTRATION_STATUS } from "@/constants/auth";
 
 type RouteAccessPolicyParams = {
   pathname: string;
@@ -48,10 +44,4 @@ export function getAuthRedirectPath({
   }
 
   return isAuthPage(pathname) ? GOOGLE_AUTH_CONFIG.successPath : null;
-}
-
-export function hasCognitoLoginToken(cookies: {
-  has(name: string): boolean;
-}) {
-  return cookies.has(AUTH_COOKIE_NAMES.cognitoIdToken);
 }

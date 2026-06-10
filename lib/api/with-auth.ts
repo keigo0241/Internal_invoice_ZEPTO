@@ -1,4 +1,4 @@
-import { getGoogleVerifiedEmailFromRequest } from "@/features/auth/services/session";
+import { getGoogleAuthSessionFromRequest } from "@/features/auth/services/session";
 import { UnauthorizedError } from "@/lib/api/errors";
 import { runGuards } from "@/lib/api/pipeline";
 import {
@@ -23,16 +23,16 @@ export function withAuth(
   guards: ApiGuard[] = [],
 ) {
   return withApi(async (ctx) => {
-    const googleVerifiedEmail = getGoogleVerifiedEmailFromRequest(ctx.request);
+    const googleAuthSession = getGoogleAuthSessionFromRequest(ctx.request);
 
-    if (!googleVerifiedEmail) {
+    if (!googleAuthSession) {
       throw new UnauthorizedError("Google認証からやり直してください。");
     }
 
     const authenticatedCtx = {
       ...ctx,
       auth: {
-        googleVerifiedEmail,
+        googleVerifiedEmail: googleAuthSession.googleVerifiedEmail,
       },
     };
     const guardResult = await runGuards(authenticatedCtx, guards);

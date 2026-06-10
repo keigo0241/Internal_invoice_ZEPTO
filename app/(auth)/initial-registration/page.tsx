@@ -1,14 +1,18 @@
 import { redirect } from "next/navigation";
 import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
-import { getCurrentGoogleVerifiedEmail } from "@/features/auth/services/session";
+import { getCurrentGoogleAuthSession } from "@/features/auth/services/session";
 import { InitialRegistrationContent } from "./content";
 
 export default async function InitialRegistrationPage() {
-  const googleVerifiedEmail = await getCurrentGoogleVerifiedEmail();
+  const googleAuthSession = await getCurrentGoogleAuthSession();
 
-  if (!googleVerifiedEmail) {
+  if (!googleAuthSession) {
     redirect(GOOGLE_AUTH_CONFIG.loginPath);
   }
 
-  return <InitialRegistrationContent googleVerifiedEmail={googleVerifiedEmail} />;
+  return (
+    <InitialRegistrationContent
+      googleVerifiedEmail={googleAuthSession.googleVerifiedEmail}
+    />
+  );
 }
