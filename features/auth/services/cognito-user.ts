@@ -8,6 +8,7 @@ import {
   ConflictError,
   InternalServerError,
 } from "@/lib/api/errors";
+import { logger } from "@/lib/logger/logger";
 import { getCognitoClient, getCognitoConfig } from "@/libs/cognito";
 import { normalizeEmail } from "@/utils/validator/input/email";
 
@@ -37,6 +38,32 @@ export async function deleteCognitoUser(username: string) {
   );
 }
 
+async function cleanupCognitoUser(username: string) {
+  try {
+    await deleteCognitoUser(username);
+  } catch (error) {
+    logger.error({
+      message: "Failed to cleanup Cognito user after registration failure.",
+      context: {
+        username,
+      },
+      error,
+    });
+  }
+}
+
+function handleRegisterCognitoUserError(error: unknown): never {
+  if (isCognitoError(error, "UsernameExistsException")) {
+    throw new ConflictError("このメールアドレスはすでに登録されています。");
+  }
+
+  if (isCognitoError(error, "InvalidPasswordException")) {
+    throw new BadRequestError("パスワードの条件を確認してください。");
+  }
+
+  throw new InternalServerError("Cognitoユーザーを作成できませんでした。");
+}
+
 export async function registerCognitoUser({
   email,
   password,
@@ -44,6 +71,7 @@ export async function registerCognitoUser({
   const normalizedEmail = normalizeEmail(email);
   const cognitoClient = getCognitoClient();
   const cognitoConfig = getCognitoConfig();
+  let isUserCreated = false;
 
   try {
     await cognitoClient.send(
@@ -63,6 +91,7 @@ export async function registerCognitoUser({
         ],
       }),
     );
+    isUserCreated = true;
 
     await cognitoClient.send(
       new AdminSetUserPasswordCommand({
@@ -73,20 +102,10 @@ export async function registerCognitoUser({
       }),
     );
   } catch (error) {
-    if (isCognitoError(error, "UsernameExistsException")) {
-      throw new ConflictError("このメールアドレスはすでに登録されています。");
+    if (isUserCreated) {
+      await cleanupCognitoUser(normalizedEmail);
     }
 
-    if (isCognitoError(error, "InvalidPasswordException")) {
-      await deleteCognitoUser(normalizedEmail).catch(() => undefined);
-
-      throw new BadRequestError("パスワードの条件を確認してください。");
-    }
-
-    if (!isCognitoError(error, "UserNotFoundException")) {
-      await deleteCognitoUser(normalizedEmail).catch(() => undefined);
-    }
-
-    throw new InternalServerError("Cognitoユーザーを作成できませんでした。");
+    handleRegisterCognitoUserError(error);
   }
 }

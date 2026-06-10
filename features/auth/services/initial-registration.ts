@@ -7,11 +7,26 @@ import {
   registerCognitoUser,
 } from "@/features/auth/services/cognito-user";
 import { ConflictError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger/logger";
 
 type RegisterInitialUserParams = {
   googleVerifiedEmail: string;
   form: InitialRegistrationForm;
 };
+
+async function cleanupCognitoUserAfterDatabaseFailure(email: string) {
+  try {
+    await deleteCognitoUser(email);
+  } catch (error) {
+    logger.error({
+      message: "Failed to cleanup Cognito user after database registration failure.",
+      context: {
+        email,
+      },
+      error,
+    });
+  }
+}
 
 export async function registerInitialUser({
   googleVerifiedEmail,
@@ -41,7 +56,7 @@ export async function registerInitialUser({
       accountHolder: form.accountHolder,
     });
   } catch (error) {
-    await deleteCognitoUser(googleVerifiedEmail).catch(() => undefined);
+    await cleanupCognitoUserAfterDatabaseFailure(googleVerifiedEmail);
 
     throw error;
   }

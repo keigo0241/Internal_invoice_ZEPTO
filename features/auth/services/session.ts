@@ -141,13 +141,17 @@ function isValidCognitoToken(token: string | undefined) {
   }
 }
 
+function isProductionEnvironment() {
+  return getEnv(AUTH_ENV_KEYS.nodeEnv) === "production";
+}
+
 function getAuthCookieOptions(maxAge: number) {
   return {
     httpOnly: true,
     maxAge,
     path: "/",
     sameSite: "lax" as const,
-    secure: getEnv(AUTH_ENV_KEYS.nodeEnv) === "production",
+    secure: isProductionEnvironment(),
   };
 }
 
@@ -203,7 +207,7 @@ export function createGoogleRegistrationCompletedCookieHeader() {
     "SameSite=Lax",
   ];
 
-  if (getEnv(AUTH_ENV_KEYS.nodeEnv) === "production") {
+  if (isProductionEnvironment()) {
     cookieParts.push("Secure");
   }
 
