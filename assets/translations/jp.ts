@@ -30,7 +30,10 @@ export const jp = {
       password: "半角英数字で入力",
     },
     loginButton: "ログイン",
+    submittingButton: "ログイン中",
     passwordResetLink: "パスワードをお忘れの場合",
+    loginError:
+      "ログインできませんでした。メールアドレスまたはパスワードを確認してください。",
   },
   initialRegistration: {
     title: "初回登録",
@@ -71,6 +74,14 @@ export const jp = {
     submittingButton: "登録中",
     registrationError:
       "ユーザー情報を登録できませんでした。入力内容を確認してください。",
+  },
+  dashboard: {
+    title: "ダッシュボード",
+    description: "申請状況や請求書の概要を確認できます。",
+    placeholder: "ダッシュボードデータ取得処理は今後ここに接続します。",
+    logoutButton: "ログアウト",
+    loggingOutButton: "ログアウト中",
+    logoutError: "ログアウトできませんでした。もう一度お試しください。",
   },
   invoices: {
     title: "請求書一覧",

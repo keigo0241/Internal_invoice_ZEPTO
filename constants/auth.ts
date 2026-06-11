@@ -11,10 +11,12 @@ export const GOOGLE_AUTH_CONFIG = {
   startPath: "/api/v1/auth/google",
   callbackPath: "/api/v1/auth/google/callback",
   initialRegistrationApiPath: "/api/v1/auth/initial-registration",
+  appLoginApiPath: "/api/v1/auth/login",
+  logoutApiPath: "/api/v1/auth/logout",
   loginPath: "/login",
   appLoginPath: "/app-login",
   initialRegistrationPath: "/initial-registration",
-  successPath: "/invoices",
+  successPath: "/dashboard",
 } as const;
 
 export const LOGIN_ERROR_CODE = {

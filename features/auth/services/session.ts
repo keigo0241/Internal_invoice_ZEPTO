@@ -1,4 +1,9 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import {
+  createHmac,
+  createPublicKey,
+  timingSafeEqual,
+  verify as verifyCryptoSignature,
+} from "crypto";
 import { cookies } from "next/headers";
 import { type NextResponse } from "next/server";
 import {
@@ -6,7 +11,9 @@ import {
   AUTH_COOKIE_NAMES,
   GOOGLE_REGISTRATION_STATUS,
 } from "@/constants/auth";
+import { type CognitoAuthTokens } from "@/features/auth/types/app-login";
 import { getCookieValue } from "@/lib/http/cookies";
+import { getCognitoTokenVerificationConfig } from "@/libs/cognito-config";
 import { getEnv } from "@/libs/server/env/get-env";
 import { getRequiredEnv } from "@/libs/server/env/get-required-env";
 import { normalizeEmail } from "@/utils/validator/input/email";
@@ -26,7 +33,29 @@ type GoogleAuthSession = {
 };
 
 type CognitoTokenPayload = {
+  aud: string;
   exp: number;
+  iss: string;
+  token_use: string;
+};
+
+type CognitoTokenHeader = {
+  alg: string;
+  kid: string;
+};
+
+type CognitoJwk = JsonWebKey & {
+  [key: string]: unknown;
+  kid: string;
+  kty: string;
+};
+
+type CognitoJwks = {
+  keys: CognitoJwk[];
+};
+
+type GlobalWithCognitoJwks = typeof globalThis & {
+  cognitoJwks?: CognitoJwks;
 };
 
 function encodeBase64Url(value: string) {
@@ -90,17 +119,43 @@ function isCognitoTokenPayload(value: unknown): value is CognitoTokenPayload {
 
   const payload = value as Partial<CognitoTokenPayload>;
 
-  return typeof payload.exp === "number";
+  return (
+    typeof payload.aud === "string" &&
+    typeof payload.exp === "number" &&
+    typeof payload.iss === "string" &&
+    typeof payload.token_use === "string"
+  );
 }
 
-function decodeJwtPayload(token: string) {
-  const [, encodedPayload] = token.split(".");
+function isCognitoTokenHeader(value: unknown): value is CognitoTokenHeader {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
 
-  if (!encodedPayload) {
+  const header = value as Partial<CognitoTokenHeader>;
+
+  return typeof header.alg === "string" && typeof header.kid === "string";
+}
+
+function decodeJwtPart(value: string) {
+  return JSON.parse(decodeBase64Url(value)) as unknown;
+}
+
+function parseJwt(token: string) {
+  const [encodedHeader, encodedPayload, signature] = token.split(".");
+
+  if (!encodedHeader || !encodedPayload || !signature) {
     return null;
   }
 
-  return JSON.parse(decodeBase64Url(encodedPayload)) as unknown;
+  return {
+    encodedHeader,
+    encodedPayload,
+    header: decodeJwtPart(encodedHeader),
+    payload: decodeJwtPart(encodedPayload),
+    signature,
+    signingInput: `${encodedHeader}.${encodedPayload}`,
+  };
 }
 
 function getGoogleVerifiedEmailFromToken(token: string | undefined) {
@@ -124,18 +179,106 @@ function getGoogleVerifiedEmailFromToken(token: string | undefined) {
   }
 }
 
-function isValidCognitoToken(token: string | undefined) {
+function getCognitoIssuer() {
+  const { region, userPoolId } = getCognitoTokenVerificationConfig();
+
+  return `https://cognito-idp.${region}.amazonaws.com/${userPoolId}`;
+}
+
+function getCognitoJwksUrl() {
+  return `${getCognitoIssuer()}/.well-known/jwks.json`;
+}
+
+async function fetchCognitoJwks() {
+  const globalWithCognitoJwks = globalThis as GlobalWithCognitoJwks;
+
+  if (globalWithCognitoJwks.cognitoJwks) {
+    return globalWithCognitoJwks.cognitoJwks;
+  }
+
+  const response = await fetch(getCognitoJwksUrl());
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const jwks = (await response.json()) as CognitoJwks;
+  globalWithCognitoJwks.cognitoJwks = jwks;
+
+  return jwks;
+}
+
+async function getCognitoJwk(kid: string) {
+  const jwks = await fetchCognitoJwks();
+
+  return jwks?.keys.find((key) => key.kid === kid) ?? null;
+}
+
+function isValidCognitoTokenClaims(payload: CognitoTokenPayload) {
+  const { appClientId } = getCognitoTokenVerificationConfig();
+
+  return (
+    payload.exp > Math.floor(Date.now() / 1000) &&
+    payload.iss === getCognitoIssuer() &&
+    payload.aud === appClientId &&
+    payload.token_use === "id"
+  );
+}
+
+function verifyCognitoTokenSignature({
+  jwk,
+  signingInput,
+  signature,
+}: {
+  jwk: CognitoJwk;
+  signingInput: string;
+  signature: string;
+}) {
+  const publicKey = createPublicKey({
+    key: jwk,
+    format: "jwk",
+  });
+
+  return verifyCryptoSignature(
+    "RSA-SHA256",
+    Buffer.from(signingInput),
+    publicKey,
+    Buffer.from(signature, "base64url"),
+  );
+}
+
+async function isValidCognitoToken(token: string | undefined) {
   if (!token) {
     return false;
   }
 
   try {
-    const payload = decodeJwtPayload(token);
+    const jwt = parseJwt(token);
 
-    return (
-      isCognitoTokenPayload(payload) &&
-      payload.exp > Math.floor(Date.now() / 1000)
-    );
+    if (!jwt) {
+      return false;
+    }
+
+    if (!isCognitoTokenHeader(jwt.header) || jwt.header.alg !== "RS256") {
+      return false;
+    }
+
+    if (
+      !isCognitoTokenPayload(jwt.payload) ||
+      !isValidCognitoTokenClaims(jwt.payload)
+    ) {
+      return false;
+    }
+
+    const jwk = await getCognitoJwk(jwt.header.kid);
+
+    return jwk
+      ? verifyCognitoTokenSignature({
+          jwk,
+          signingInput: jwt.signingInput,
+          signature: jwt.signature,
+        })
+      : false;
   } catch {
     return false;
   }
@@ -214,6 +357,83 @@ export function createGoogleRegistrationCompletedCookieHeader() {
   return cookieParts.join("; ");
 }
 
+function appendCookieHeader({
+  headers,
+  name,
+  value,
+  maxAge,
+}: {
+  headers: Headers;
+  name: string;
+  value: string;
+  maxAge: number;
+}) {
+  const cookieParts = [
+    `${name}=${value}`,
+    "Path=/",
+    `Max-Age=${maxAge}`,
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+
+  if (isProductionEnvironment()) {
+    cookieParts.push("Secure");
+  }
+
+  headers.append("Set-Cookie", cookieParts.join("; "));
+}
+
+function appendExpiredCookieHeader(headers: Headers, name: string) {
+  const cookieParts = [
+    `${name}=`,
+    "Path=/",
+    "Max-Age=0",
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+
+  if (isProductionEnvironment()) {
+    cookieParts.push("Secure");
+  }
+
+  headers.append("Set-Cookie", cookieParts.join("; "));
+}
+
+export function createCognitoAuthSessionCookieHeaders(tokens: CognitoAuthTokens) {
+  const headers = new Headers();
+
+  appendCookieHeader({
+    headers,
+    name: AUTH_COOKIE_NAMES.cognitoIdToken,
+    value: tokens.idToken,
+    maxAge: AUTH_COOKIE_MAX_AGE_SECONDS.cognitoIdToken,
+  });
+  appendCookieHeader({
+    headers,
+    name: AUTH_COOKIE_NAMES.cognitoAccessToken,
+    value: tokens.accessToken,
+    maxAge: AUTH_COOKIE_MAX_AGE_SECONDS.cognitoAccessToken,
+  });
+  appendCookieHeader({
+    headers,
+    name: AUTH_COOKIE_NAMES.cognitoRefreshToken,
+    value: tokens.refreshToken,
+    maxAge: AUTH_COOKIE_MAX_AGE_SECONDS.cognitoRefreshToken,
+  });
+
+  return headers;
+}
+
+export function createLogoutCookieHeaders() {
+  const headers = new Headers();
+
+  Object.values(AUTH_COOKIE_NAMES).forEach((cookieName) => {
+    appendExpiredCookieHeader(headers, cookieName);
+  });
+
+  return headers;
+}
+
 export async function getCurrentGoogleAuthSession(): Promise<GoogleAuthSession | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAMES.googleVerifiedEmail)?.value;
@@ -235,6 +455,6 @@ export function hasValidGoogleAuthSessionToken(token: string | undefined) {
   return Boolean(getGoogleVerifiedEmailFromToken(token));
 }
 
-export function hasValidCognitoAuthSessionToken(token: string | undefined) {
+export async function hasValidCognitoAuthSessionToken(token: string | undefined) {
   return isValidCognitoToken(token);
 }

@@ -6,7 +6,7 @@ import {
 } from "@/features/auth/services/session";
 import { getAuthRedirectPath } from "@/features/auth/services/route-access-policy";
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const googleVerifiedEmailToken = request.cookies.get(
     AUTH_COOKIE_NAMES.googleVerifiedEmail,
@@ -17,13 +17,15 @@ export function proxy(request: NextRequest) {
   const cognitoIdToken = request.cookies.get(
     AUTH_COOKIE_NAMES.cognitoIdToken,
   )?.value;
+  const hasCognitoIdToken =
+    await hasValidCognitoAuthSessionToken(cognitoIdToken);
   const redirectPath = getAuthRedirectPath({
     pathname,
     hasGoogleVerifiedEmail: hasValidGoogleAuthSessionToken(
       googleVerifiedEmailToken,
     ),
     googleRegistrationStatus,
-    hasCognitoIdToken: hasValidCognitoAuthSessionToken(cognitoIdToken),
+    hasCognitoIdToken,
   });
 
   if (redirectPath) {

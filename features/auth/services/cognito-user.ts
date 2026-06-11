@@ -9,7 +9,8 @@ import {
   InternalServerError,
 } from "@/lib/api/errors";
 import { logger } from "@/lib/logger/logger";
-import { getCognitoClient, getCognitoConfig } from "@/libs/cognito";
+import { getCognitoClient } from "@/libs/cognito";
+import { getCognitoConfig } from "@/libs/cognito-config";
 import { normalizeEmail } from "@/utils/validator/input/email";
 
 type RegisterCognitoUserParams = {
@@ -64,7 +65,17 @@ function handleRegisterCognitoUserError(error: unknown): never {
       throw new ConflictError("このメールアドレスはすでに登録されています。");
     case "InvalidPasswordException":
       throw new BadRequestError("パスワードの条件を確認してください。");
+    case "CredentialsProviderError":
+      throw new InternalServerError("AWS認証情報を確認してください。");
     default:
+      logger.error({
+        message: "Unexpected Cognito user registration error.",
+        context: {
+          errorName,
+        },
+        error,
+      });
+
       throw new InternalServerError("Cognitoユーザーを作成できませんでした。");
   }
 }
