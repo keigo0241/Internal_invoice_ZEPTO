@@ -1,9 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { type ChangeEvent, type FormEvent, useState } from "react";
 import { jp } from "@/assets/translations/jp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GOOGLE_AUTH_CONFIG } from "@/constants/auth";
 import { filterHalfWidthAlphanumericInput } from "@/utils/validator/input/filter";
 
 type AppLoginContentProps = {
@@ -13,15 +15,67 @@ type AppLoginContentProps = {
 const inputClassName =
   "h-11 rounded-md border-slate-300 bg-white px-3 text-sm text-slate-900 focus-visible:border-sky-700 focus-visible:ring-sky-100";
 
+type AppLoginResponse = {
+  data?: {
+    redirectPath?: string;
+  };
+  message?: string;
+};
+
+function getFormStringValue(formData: FormData, name: string) {
+  return String(formData.get(name) ?? "");
+}
+
+async function parseAppLoginResponse(response: Response) {
+  try {
+    return (await response.json()) as AppLoginResponse;
+  } catch {
+    return {};
+  }
+}
+
 export function AppLoginContent({ googleVerifiedEmail }: AppLoginContentProps) {
+  const router = useRouter();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState("");
 
   function handlePasswordChange(event: ChangeEvent<HTMLInputElement>) {
     setPassword(filterHalfWidthAlphanumericInput(event.target.value));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      const response = await fetch(GOOGLE_AUTH_CONFIG.appLoginApiPath, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: getFormStringValue(formData, "email"),
+          password: getFormStringValue(formData, "password"),
+        }),
+      });
+      const result = await parseAppLoginResponse(response);
+
+      if (!response.ok) {
+        setErrorMessage(result.message ?? jp.appLogin.loginError);
+        setIsSubmitting(false);
+
+        return;
+      }
+
+      router.push(result.data?.redirectPath ?? GOOGLE_AUTH_CONFIG.successPath);
+    } catch {
+      setErrorMessage(jp.appLogin.loginError);
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -86,11 +140,18 @@ export function AppLoginContent({ googleVerifiedEmail }: AppLoginContentProps) {
             </a>
           </div>
 
+          {errorMessage ? (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
+              {errorMessage}
+            </p>
+          ) : null}
+
           <Button
             type="submit"
+            disabled={isSubmitting}
             className="h-12 w-full rounded-md bg-sky-800 px-6 text-base font-bold text-white hover:bg-sky-700"
           >
-            {jp.appLogin.loginButton}
+            {isSubmitting ? jp.appLogin.submittingButton : jp.appLogin.loginButton}
           </Button>
         </form>
       </section>
